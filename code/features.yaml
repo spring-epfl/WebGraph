@@ -1,0 +1,109 @@
+# Things to check in this file
+
+# List under selected_features: This is used in feature extraction.
+# AdGraph uses - node, ne, connectivity, url, script_content.
+# WebGraph uses AdGraph + data_flow, indirect_edge, indirect_all_edge, cookie
+
+# List under feature_set. Select only one option
+# adgraph and trackergraph options will only use non-content
+# adgraph_all and trackergraph_all will also use content
+
+features_to_extract:
+      #- content
+      - structure
+      - dataflow
+      #- additional
+
+classifier_feature_set:
+      #- adgraph
+      - webgraph
+     
+graph_columns:
+      - visit_id
+      - name
+      - top_level_url
+      - type 
+      - attr 
+      - domain
+      - document_url
+      - setter
+      - setting_time_stamp
+      - top_level_domain
+      - setter_domain
+      - graph_attr
+      - party
+      - src 
+      - dst
+      - action
+      - time_stamp
+      - reqattr
+      - respattr
+      - response_status 
+      - content_hash 
+      - post_body
+      - post_body_raw
+
+feature_columns:
+      - visit_id
+      - name
+      - num_nodes
+      - num_edges
+      - nodes_div_by_edges
+      - edges_div_by_nodes
+      - in_degree
+      - out_degree
+      - in_out_degree
+      - ancestors
+      - descendants
+      - closeness_centrality
+      - average_degree_connectivity
+      - eccentricity 
+      - is_parent_script
+      - is_ancestor_script
+      - ascendant_has_ad_keyword
+      - is_eval_or_function
+      - descendant_of_eval_or_function
+      - ascendant_script_has_eval_or_function
+      - ascendant_script_has_fp_keyword
+      - ascendant_script_length
+      - num_get_storage
+      - num_set_storage
+      - num_get_cookie
+      - num_set_cookie
+      - num_script_predecessors
+      - num_script_successors
+      - num_requests_sent
+      - num_requests_received
+      - num_redirects_sent
+      - num_redirects_rec
+      - max_depth_redirect
+      - indirect_in_degree
+      - indirect_out_degree
+      - indirect_ancestors
+      - indirect_descendants
+      - indirect_closeness_centrality
+      - indirect_average_degree_connectivity
+      - indirect_eccentricity
+      - indirect_mean_in_weights
+      - indirect_min_in_weights
+      - indirect_max_in_weights
+      - indirect_mean_out_weights
+      - indirect_min_out_weights
+      - indirect_max_out_weights
+      - num_set_get_src
+      - num_set_mod_src
+      - num_set_url_src
+      - num_get_url_src
+      - num_set_get_dst
+      - num_set_mod_dst
+      - num_set_url_dst
+      - num_get_url_dst
+      - indirect_all_in_degree
+      - indirect_all_out_degree
+      - indirect_all_ancestors
+      - indirect_all_descendants
+      - indirect_all_closeness_centrality
+      - indirect_all_average_degree_connectivity
+      - indirect_all_eccentricity
+
+ 

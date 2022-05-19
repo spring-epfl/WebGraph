@@ -1,0 +1,15 @@
+pandas
+openwpm-utils
+tqdm
+pyyaml
+resource
+multidict
+adblockparser
+plyvel
+scikit-learn
+scipy
+tldextract
+urllib3
+pymysql
+Levenshtein
+networkx
