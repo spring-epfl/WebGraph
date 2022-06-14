@@ -6,15 +6,15 @@ import json
 def get_url_features(url, node_dict):
 
   """
-  Function to extract URL features (specified in features.yaml file)
+  Function to extract URL features.
 
   Args:
     url: URL of node
-    top_level_url: Top level URL
+    node_dict: Attribute of node (domain/content policy type/top level URL)
   Returns:
-    List of URL features
+    url_features: URL feature values
+    url_feature_names: URL feature names
   """
-
   keyword_raw = ["ad", "ads", "advert", "popup", "banner", "sponsor", "iframe", "googlead", "adsys", "adser", "advertise", "redirect",
                  "popunder", "punder", "popout", "click", "track", "play", "pop", "prebid", "bid", "pb.min", "affiliate", "ban", "delivery",
                  "promo","tag", "zoneid", "siteid", "pageid", "size", "viewid", "zone_id", "google_afc" , "google_afs"]
@@ -102,14 +102,15 @@ def get_url_features(url, node_dict):
 def get_node_features(node_name, node_dict, le):
 
   """
-  Function to extract node features (specified in features.yaml file)
+  Function to extract node features.
 
   Args:
     node_name: URL of node
-    node_attr: Attribute of node (CPT/top level URL)
+    node_dict: Attribute of node (domain/content policy type/top level URL)
     le: LabelEncoding for node type
   Returns:
-    List of node features
+    node_features: node feature values
+    node_feature_names: node feature names
   """
 
   node_features = []
@@ -142,6 +143,19 @@ def get_node_features(node_name, node_dict, le):
   return node_features, node_feature_names
 
 def get_content_features(G, df_graph, node):
+
+  """
+  Function to extract content features. This function calls 
+  the other functions to extract different types of content features.
+
+  Args:
+    G: networkX graph
+    df_graph: DataFrame representation of graph
+    node: URL of node
+  Returns:
+    all_features: content feature values
+    all_feature_names: content feature names
+  """
 
   le = preprocessing.LabelEncoder()
   le.fit(["Request", "Script", "Document", "Element", "Storage"])

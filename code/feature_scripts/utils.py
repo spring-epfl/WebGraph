@@ -2,7 +2,6 @@ import pandas as pd
 import json
 import networkx as nx
 import re
-#import plyvel
 from openwpm_utils import domain as du
 from six.moves.urllib.parse import urlparse, parse_qs
 from sklearn import preprocessing
@@ -15,6 +14,16 @@ import base64
 import hashlib
 
 def has_ad_keyword(node, G):
+
+  """
+  Function to check if a node URL xhas an ad keyword.
+
+  Args:
+    node: URL of node
+    G: networkX representation of graph
+  Returns:
+    has_ad_keyword: binary value showing if node URL has ad keyword
+  """
 
   keyword_raw = ["ad", "ads", "advert", "popup", "banner", "sponsor", "iframe", "googlead", "adsys", "adser", "advertise", "redirect",
                  "popunder", "punder", "popout", "click", "track", "play", "pop", "prebid", "bid", "pb.min", "affiliate", "ban",
@@ -32,6 +41,16 @@ def has_ad_keyword(node, G):
   return has_ad_keyword
 
 def ad_keyword_ascendants(node, G):
+
+  """
+  Function to check if any ascendant of a node has an ad keyword.
+
+  Args:
+    node: URL of node
+    G: networkX representation of graph
+  Returns:
+    ascendant_has_ad_keyword: binary value showing if ascendant has ad keyword
+  """
 
   keyword_raw = ["ad", "ads", "advert", "popup", "banner", "sponsor", "iframe", "googlead", "adsys", "adser", "advertise", "redirect",
                  "popunder", "punder", "popout", "click", "track", "play", "pop", "prebid", "bid", "pb.min", "affiliate", "ban", "delivery",
@@ -56,30 +75,43 @@ def ad_keyword_ascendants(node, G):
       continue
   return ascendant_has_ad_keyword
 
-def get_num_attr_changes(df_modified_attr, G):
-
-  num_attr_changes = 0
-  source_list = df_modified_attr['src'].tolist()
-  for source in source_list:
-    if nx.get_node_attributes(G, 'type')[source] == 'Script':
-      num_attr_changes += 1
-  return num_attr_changes
 
 def find_modified_storage(df_target):
+
+  """
+  Function to find modified edges -- if a storage element is set by Node 1 and modified (set again) by Node 2,
+  there will be an edge from Node 1 to Node 2.
+
+  Args:
+    df_target: DataFrame representation of all storage sets, for a particular storage element.
+  Returns:
+    df_modedges: DataFrame representation of modified edges.
+  """
 
   df_modedges = pd.DataFrame()
   df_copy = df_target.copy().sort_values(by=['time_stamp'])
   df_copy = df_copy.reset_index()
   set_node = df_copy.iloc[[0]][['src','dst']]
   modify_nodes = df_copy.drop([0], axis=0)[['src','dst']]
+  
   if len(modify_nodes) > 0:
     df_merged = pd.merge(set_node, modify_nodes, on='dst')
     df_modedges = df_merged[['src_x', 'src_y', 'dst']].drop_duplicates()
     df_modedges.columns = ['src', 'dst', 'attr']
     df_modedges = df_modedges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
+  
   return df_modedges
 
 def get_cookieval(attr):
+
+  """
+  Function to extract cookie value.
+
+  Args:
+    attr: attributes of cookie node
+  Returns:
+    name: cookie value
+  """
 
   try:
     attr = json.loads(attr)
@@ -92,6 +124,15 @@ def get_cookieval(attr):
 
 def get_cookiename(attr):
 
+  """
+  Function to extract cookie name.
+
+  Args:
+    attr: attributes of cookie node
+  Returns:
+    name: cookie name
+  """
+
   try:
     attr = json.loads(attr)
     if 'name' in attr:
@@ -103,13 +144,20 @@ def get_cookiename(attr):
 
 def get_redirect_depths(df_graph):
 
+  """
+  Function to extract redirect depths of every node in the graph.
+
+  Args:
+    df_graph: DataFrame representation of graph
+  Returns:
+    dict_redict: dictionary of redirect depths for each node
+  """
+
   dict_redirect = {}
 
   try:
 
     http_status = [300, 301, 302, 303, 307, 308]
-    #http_status = [str(x) for x in http_status]
-
     df_redirect = df_graph[df_graph['response_status'].isin(http_status)]
     G_red = gs.build_networkx_graph(df_redirect)
 
@@ -139,37 +187,125 @@ def get_redirect_depths(df_graph):
     return dict_redirect
 
 def find_urls(df):
+
+  """
+  Function to get set of URLs on a site.
+
+  Args:
+    df: DataFrame representation of all edges.
+  Returns:
+    all_urls: List of URLs.
+  """
+
   src_urls = df['src'].tolist()
   dst_urls = df['dst'].tolist()
-  return list(set(src_urls + dst_urls))
+  all_urls = list(set(src_urls + dst_urls))
+  return all_urls
 
 def check_full_cookie(cookie_value, dest):
+
+  """
+  Function to check if a cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a cookie value exists in a URL.
+  """
+
   return True if len([item for item in cookie_value if item in dest and len(item) > 3]) > 0 else False
 
 def check_partial_cookie(cookie_value, dest):
+
+  """
+  Function to check if a partial cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a partial cookie value exists in a URL.
+  """
+
   for value in cookie_value:
       split_cookie = re.split(r'\.+|;+|]+|\!+|\@+|\#+|\$+|\%+|\^+|\&+|\*+|\(+|\)+|\-+|\_+|\++|\~+|\`+|\@+=|\{+|\}+|\[+|\]+|\\+|\|+|\:+|\"+|\'+|\<+|\>+|\,+|\?+|\/+', value)
-      return True if len([item for item in split_cookie if item in dest and len(item) > 3]) > 0 else False
+      return True if len([item for item in split_cookie if item in dest and len(item) > 3]) > 0 else False  
   return False
 
 def check_base64_cookie(cookie_value, dest):
+
+  """
+  Function to check if a base64 encoded cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a base64 encoded cookie value exists in a URL.
+  """
+
   return True if len([item for item in cookie_value if base64.b64encode(item.encode('utf-8')).decode('utf8') in dest and len(item) > 3]) > 0 else False
 
 
 def check_md5_cookie(cookie_value, dest):
+
+  """
+  Function to check if a MD5 hashed cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a MD5 hashed cookie value exists in a URL.
+  """
+
   return True if len([item for item in cookie_value if hashlib.md5(item.encode('utf-8')).hexdigest() in dest and len(item) > 3]) > 0 else False
 
 
 def check_sha1_cookie(cookie_value, dest):
+
+  """
+  Function to check if a SHA1 hashed cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a SHA1 hashed cookie value exists in a URL.
+  """
+
   return True if len([item for item in cookie_value if hashlib.sha1(item.encode('utf-8')).hexdigest() in dest and len(item) > 3]) > 0 else False
 
 def check_full_cookie_set(cookie_value, dest):
+
+  """
+  Function to check if a cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a cookie value exists in a URL.
+  """
+
   if (len(cookie_value) > 3) and (cookie_value in dest):
     return True
   else:
     return False
 
 def check_partial_cookie_set(cookie_value, dest):
+
+  """
+  Function to check if a partial cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a partial cookie value exists in a URL.
+  """
+
   split_cookie = re.split(r'\.+|;+|]+|\!+|\@+|\#+|\$+|\%+|\^+|\&+|\*+|\(+|\)+|\-+|\_+|\++|\~+|\`+|\@+=|\{+|\}+|\[+|\]+|\\+|\|+|\:+|\"+|\'+|\<+|\>+|\,+|\?+|\/+', cookie_value)
   for item in split_cookie:
     if len(item) > 3 and item in dest:
@@ -178,18 +314,51 @@ def check_partial_cookie_set(cookie_value, dest):
 
 
 def check_base64_cookie_set(cookie_value, dest):
+
+  """
+  Function to check if a base64 encoded cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a base64 encoded cookie value exists in a URL.
+  """
+
   if (len(cookie_value) > 3) and (base64.b64encode(cookie_value.encode('utf-8')).decode('utf8') in dest):
     return True
   else:
     return False
 
 def check_md5_cookie_set(cookie_value, dest):
+
+  """
+  Function to check if a MD5 hashed cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a MD5 hashed cookie value exists in a URL.
+  """
+
   if (len(cookie_value) > 3) and (hashlib.md5(cookie_value.encode('utf-8')).hexdigest() in dest):
     return True
   else:
     return False
 
 def check_sha1_cookie_set(cookie_value, dest):
+
+  """
+  Function to check if a SHA1 hashed cookie value exists in a URL.
+
+  Args:
+    cookie_value: Cookie value
+    dest: URL 
+  Returns:
+    Binary value showing whether a SHA1 hashed cookie value exists in a URL.
+  """
+
   if (len(cookie_value) > 3) and (hashlib.sha1(cookie_value.encode('utf-8')).hexdigest() in dest):
     return True
   else:
@@ -221,6 +390,16 @@ def check_cookie_presence(http_attr, dest):
 
 
 def find_indirect_edges(G, df_graph):
+
+  """
+  Function to extract shared information edges, used for dataflow features.
+
+  Args:
+    G: networkX graph
+    df_graph: DataFrame representation of graph
+  Returns:
+    df_edges: DataFrame representation of shared information edges. 
+  """
 
   df_edges = pd.DataFrame()
 

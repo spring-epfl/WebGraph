@@ -4,6 +4,17 @@ from .utils import *
 
 def get_storage_features(df_graph, node):
 
+  """
+  Function to extract storage features.
+
+  Args:
+    df_graph: DataFrame representation of graph
+    node: URL of node
+  Returns:
+    storage_features: storage feature values
+    storage_feature_names: storage feature names
+  """
+
   cookie_get = df_graph[(df_graph['src'] == node) & \
                   ((df_graph['action'] == 'get') | (df_graph['action'] == 'get_js'))]
 
@@ -28,6 +39,18 @@ def get_storage_features(df_graph, node):
 
 def get_redirect_features(df_graph, node, dict_redirect):
 
+  """
+  Function to extract redirect features.
+
+  Args:
+    df_graph: DataFrame representation of graph
+    node: URL of node
+    dict_redirect: dictionary of redirect depths for each node
+  Returns:
+    redirect_features: redirect feature values
+    redirect_feature_names: redirect feature names
+  """
+
   http_status = [300, 301, 302, 303, 307, 308]
   #http_status = [str(x) for x in http_status]
 
@@ -46,6 +69,18 @@ def get_redirect_features(df_graph, node, dict_redirect):
   return redirect_features, redirect_feature_names
 
 def get_request_flow_features(G, df_graph, node):
+
+  """
+  Function to extract request flow features.
+
+  Args:
+    G: networkX graph
+    df_graph: DataFrame representation of graph
+    node: URL of node
+  Returns:
+    rf_features: request flow feature values
+    rf_feature_names: request flow feature names
+  """
 
   requests_sent = df_graph[(df_graph['src'] == node) & (df_graph['reqattr'].notnull()) & (df_graph['reqattr'] != "CS") & (df_graph['reqattr'] != "N/A")] 
   requests_received = df_graph[(df_graph['dst'] == node) & (df_graph['reqattr'].notnull()) & (df_graph['reqattr'] != "CS") & (df_graph['reqattr'] != "N/A")]
@@ -72,14 +107,15 @@ def get_request_flow_features(G, df_graph, node):
 def get_indirect_features(G, df_graph, node):
 
   """
-  Function to extract indirect edge features (specified in features.yaml file)
+  Function to extract indirect edge features.
 
   Args:
-    node: URL of node
     G: networkX graph of indirect edges
     df_graph: DataFrame representation of graph (indirect edges only)
+    node: URL of node
   Returns:
-    List of indirect edge features
+    indirect_features: indirect feature values
+    indirect_feature_names: indirect feature names
   """
 
   in_degree = -1
@@ -161,13 +197,14 @@ def get_indirect_features(G, df_graph, node):
 def get_indirect_all_features(G, node):
 
   """
-  Function to extract all indirect edge features (specified in features.yaml file)
+  Function to extract dataflow features of graph with both direct and indirect edges ('indirect_all').
 
   Args:
-    node: URL of node
     G: networkX graph (of both direct and indirect edges)
+    node: URL of node
   Returns:
-    List of all indirect features
+    indirect_all_features: indirect_all feature values
+    indirect_all_feature_names: indirect_all feature names
   """
 
   in_degree = -1
@@ -206,6 +243,23 @@ def get_indirect_all_features(G, node):
 
 def get_dataflow_features(G, df_graph, node, dict_redirect, G_indirect, G_indirect_all, df_indirect_graph):
 
+  """
+  Function to extract dataflow features. This function calls 
+  the other functions to extract different types of dataflow features.
+
+  Args:
+    G: networkX graph
+    df_graph: DataFrame representation of graph
+    node: URL of node
+    dict_redirect: dictionary of redirect depths for each node
+    G_indrect: networkX graph of indirect edges
+    G_indirect_all: networkX graph of direct and indirect edges
+    df_indirect_graph: DataFrame representation of indirect edges
+  Returns:
+    all_features: dataflow feature values
+    all_feature_names: dataflow feature names
+  """
+
   all_features = []
   all_feature_names = []
 
@@ -222,6 +276,19 @@ def get_dataflow_features(G, df_graph, node, dict_redirect, G_indirect, G_indire
   return all_features, all_feature_names
 
 def pre_extraction(G, df_graph):
+
+  """
+  Function to obtain indirect edges before calculating dataflow features.
+
+  Args:
+    G: networkX graph
+    df_graph: DataFrame representation of graph
+  Returns:
+    dict_redirect: dictionary of redirect depths for each node
+    G_indrect: networkX graph of indirect edges
+    G_indirect_all: networkX graph of direct and indirect edges
+    df_indirect_edges: DataFrame representation of indirect edges
+  """
 
   G_indirect = nx.DiGraph()
   dict_redirect = get_redirect_depths(df_graph)

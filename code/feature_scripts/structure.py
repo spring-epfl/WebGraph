@@ -8,7 +8,7 @@ import traceback
 def get_script_content_features(G, df_graph, node, ldb):
 
   """
-  Function to extract script content features (specified in features.yaml file)
+  Function to extract script content features.
 
   Args:
     node: URL of node
@@ -16,10 +16,14 @@ def get_script_content_features(G, df_graph, node, ldb):
     df_graph: DataFrame representation of graph
     ldb: content LDB
   Returns:
-    List of script content features
+    sc_features: script content feature values
+    sc_features_names: script content feature names
   """
 
-  keywords_fp = ["CanvasRenderingContext2D", "HTMLCanvasElement", "toDataURL", "getImageData", "measureText", "font", "fillText", "strokeText", "fillStyle", "strokeStyle", "HTMLCanvasElement.addEventListener", "save", "restore"]
+  keywords_fp = ["CanvasRenderingContext2D", "HTMLCanvasElement", "toDataURL", 
+                  "getImageData", "measureText", "font", "fillText", "strokeText", 
+                  "fillStyle", "strokeStyle", "HTMLCanvasElement.addEventListener", 
+                  "save", "restore"]
   ancestors = nx.ancestors(G, node)
   ascendant_script_has_eval_or_function = 0
   ascendant_script_has_fp_keyword = 0
@@ -61,22 +65,44 @@ def get_script_content_features(G, df_graph, node, ldb):
 
 def get_ne_features(G):
 
-    num_nodes = len(G.nodes)
-    num_edges = len(G.edges)
-    num_nodes_div = num_nodes
-    num_edges_div = num_edges
-    if num_edges == 0:
-      num_edges_div = 0.000001
-    if num_nodes == 0:
-      num_nodes_div = 0.000001
-    nodes_div_by_edges = num_nodes/num_edges_div
-    edges_div_by_nodes = num_edges/num_nodes_div
-    ne_features = [num_nodes, num_edges, nodes_div_by_edges, edges_div_by_nodes]
-    ne_feature_names = ['num_nodes', 'num_edges', 'nodes_div_by_edges', 'edges_div_by_nodes']
+  """
+  Function to extract graph features.
 
-    return ne_features, ne_feature_names
+  Args:
+    G: networkX graph
+  Returns:
+    ne_features: graph feature values
+    ne_feature_names: graph feature names
+  """
+
+  num_nodes = len(G.nodes)
+  num_edges = len(G.edges)
+  num_nodes_div = num_nodes
+  num_edges_div = num_edges
+  if num_edges == 0:
+    num_edges_div = 0.000001
+  if num_nodes == 0:
+    num_nodes_div = 0.000001
+  nodes_div_by_edges = num_nodes/num_edges_div
+  edges_div_by_nodes = num_edges/num_nodes_div
+  ne_features = [num_nodes, num_edges, nodes_div_by_edges, edges_div_by_nodes]
+  ne_feature_names = ['num_nodes', 'num_edges', 'nodes_div_by_edges', 'edges_div_by_nodes']
+
+  return ne_features, ne_feature_names
 
 def get_connectivity_features(G, df_graph, node):
+
+  """
+  Function to extract connectivity features.
+
+  Args:
+    G: networkX graph
+    df_graph: DataFrame representation of graph
+    node: URL of node
+  Returns:
+    connectivity_features: connectivity feature values
+    connectivity_feature_names: connectivity feature names
+  """
 
   connectivity_features = []
 
@@ -175,6 +201,20 @@ def get_connectivity_features(G, df_graph, node):
 
 
 def get_structure_features(G, df_graph, node, ldb):
+
+  """
+  Function to extract structural features. This function calls 
+  the other functions to extract different types of structural features.
+
+  Args:
+    G: networkX graph
+    df_graph: DataFrame representation of graph
+    node: URL of node
+    ldb: content LDB
+  Returns:
+    all_features: strcuture feature values
+    all_feature_names: structure feature names
+  """
 
   all_features = []
   all_feature_names = []
