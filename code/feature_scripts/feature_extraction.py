@@ -1,5 +1,7 @@
 import pandas as pd
 import networkx as nx
+from .dataflow import pre_extraction, get_dataflow_features
+from .structure import get_structure_features
 
 def extract_graph_node_features(G, df_graph, G_indirect, df_indirect_graph, G_indirect_all,
     node, dict_redirect, ldb, selected_features, vid):

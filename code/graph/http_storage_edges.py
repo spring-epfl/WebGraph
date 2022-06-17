@@ -115,7 +115,7 @@ def build_http_cookie_components(df_http_edges, df_http_nodes):
             df_http_cookie_nodes = df_cookies[["visit_id", "cookie_key", "top_level_url", "domain"]].copy().drop_duplicates()
             df_http_cookie_nodes = df_http_cookie_nodes.rename(columns={'cookie_key' : 'name'})
             df_http_cookie_nodes['type'] = "Storage"
-            df_http_cookie_nodes['attr'] = "HTTPCookie"
+            df_http_cookie_nodes['attr'] = '{"cookie_type": "HTTPCookie"}'
 
             df_http_cookie_edges = df_cookies.drop(columns=['cookie_details', 'dst']).reset_index()
             del df_http_cookie_edges['index']
