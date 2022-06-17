@@ -13,7 +13,7 @@ import leveldb
 import graph as gs
 from graph.database import Database
 import labelling as ls
-from feature_scripts.feature_extraction import extract_graph_features
+from features.feature_extraction import extract_graph_features
 
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
@@ -163,7 +163,7 @@ def label_data(df, filterlists, filterlist_rules):
 
     return df_labelled
 
-def apply_tasks(df, visit_id, config_info, ldb_file, output_dir, overwrite):
+def apply_tasks(df, visit_id, config_info, ldb_file, output_dir, overwrite, filterlists, filterlist_rules):
 
     # Build the graph
     print(df.iloc[0]['top_level_url'], visit_id, len(df))
@@ -190,14 +190,14 @@ def apply_tasks(df, visit_id, config_info, ldb_file, output_dir, overwrite):
         end = time.time()
         print("Extracted features:", end-start)
 
-        # #Label data
-        # df_labelled = label_data(pdf, filterlists, filterlist_rules)
-        # if len(df_labelled) > 0:
-        #     df_labelled_path = output_dir / "labelled.csv"
-        #     if overwrite or not df_labelled_path.is_file():
-        #         df_labelled.to_csv(str(df_labelled_path))
-        #     else:
-        #         df_labelled.to_csv(str(df_labelled_path), mode='a', header=False)
+        #Label data
+        df_labelled = label_data(df, filterlists, filterlist_rules)
+        if len(df_labelled) > 0:
+            df_labelled_path = output_dir / "labelled.csv"
+            if overwrite or not df_labelled_path.is_file():
+                df_labelled.to_csv(str(df_labelled_path))
+            else:
+                df_labelled.to_csv(str(df_labelled_path), mode='a', header=False)
         
     except Exception as e:
         print("Errored in pipeline:", e)
@@ -208,8 +208,8 @@ def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, outpu
     
     number_failures = 0
 
-    #ls.download_lists(filterlist_dir, overwrite)
-    #filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
+    ls.download_lists(filterlist_dir, overwrite)
+    filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
     config_info = load_config_info(features_file)
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -232,7 +232,7 @@ def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, outpu
                 start = time.time()
                 pdf = build_graph(database, visit_id)
                 tqdm.write(str(pdf.shape))
-                pdf.groupby(['visit_id', 'top_level_domain']).apply(apply_tasks, visit_id, config_info, ldb_file, output_dir, overwrite)
+                pdf.groupby(['visit_id', 'top_level_domain']).apply(apply_tasks, visit_id, config_info, ldb_file, output_dir, overwrite, filterlists, filterlist_rules)
                 end = time.time()
                 print("Done!", end - start)
 
