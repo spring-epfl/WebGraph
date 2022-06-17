@@ -9,7 +9,14 @@ import traceback
 
 def parse_setcookie_header(cookie_header):
 
-    """Function to parse Set-Cookie headers."""
+    """
+    Function to parse Set-Cookie HTTP header.
+
+    Args:
+        cookie_header: Set-Cookie HTTP header
+    Returns:
+        cookie_list: List of cookie attributes of set cookies.
+    """
 
     cookie_list = []
     try:
@@ -33,8 +40,15 @@ def parse_setcookie_header(cookie_header):
     return cookie_list
     
 def parse_cookie_header(cookie_header):
-        
-    """Function to parse Cookie headers."""
+
+    """
+    Function to parse Cookie HTTP header.
+
+    Args:
+        cookie_header: Cookie HTTP header
+    Returns:
+        cookie_list: List of read cookies from Cookie header.
+    """
 
     cookie_list = []
     try:
@@ -50,43 +64,59 @@ def parse_cookie_header(cookie_header):
 
 def get_cookie_details(row):
 
-        """Function to get cookie details from the request/response headers."""
-        cookie_details = []
-        try:
-            reqattr = row['reqattr']
-            respattr = row['respattr']
-            dst = row['dst']
-            visit_id = row['visit_id']
-            time_stamp = row['time_stamp']
-            headers = []
-            if not pd.isna(reqattr):
-                headers += json.loads(reqattr)
-            if not pd.isna(respattr):
-                headers += json.loads(respattr)
-            #headers = json.loads(reqattr) + json.loads(respattr)
-            header_dict = multidict.MultiDict(headers)  
+    """
+    Function to get cookie details from request/response headers.
 
-            if "Cookie" in header_dict.keys():  
-                cookie_list = parse_cookie_header(header_dict["Cookie"])
-                for cookie in cookie_list:
-                    cookie_details.append([dst, cookie["name"], "get", json.dumps(cookie), visit_id, time_stamp])
-            if "Set-Cookie" in header_dict.keys():
-                cookie_list = parse_setcookie_header(header_dict["Set-Cookie"])
-                for cookie in cookie_list:
-                    cookie_details.append([dst, cookie["name"], "set", json.dumps(cookie), visit_id, time_stamp])
-            if "set-cookie" in header_dict.keys():
-                cookie_list = parse_setcookie_header(header_dict["set-cookie"])
-                for cookie in cookie_list:
-                    cookie_details.append([dst, cookie["name"], "set", json.dumps(cookie), visit_id, time_stamp])
-        except Exception as e:
-            print("Error in http_cookies: getting cookie details")
-            #traceback.print_exc()
-            #print(reqattr)
-            #print(respattr)
+    Args:
+        row: Row data of a particular HTTP request.
+    Returns:
+        cookie_details: List of cookie details for set/read cookies.
+    """
 
-        return cookie_details
+    cookie_details = []
+    try:
+        reqattr = row['reqattr']
+        respattr = row['respattr']
+        dst = row['dst']
+        visit_id = row['visit_id']
+        time_stamp = row['time_stamp']
+        headers = []
+        if not pd.isna(reqattr):
+            headers += json.loads(reqattr)
+        if not pd.isna(respattr):
+            headers += json.loads(respattr)
+        #headers = json.loads(reqattr) + json.loads(respattr)
+        header_dict = multidict.MultiDict(headers)  
+
+        if "Cookie" in header_dict.keys():  
+            cookie_list = parse_cookie_header(header_dict["Cookie"])
+            for cookie in cookie_list:
+                cookie_details.append([dst, cookie["name"], "get", json.dumps(cookie), visit_id, time_stamp])
+        if "Set-Cookie" in header_dict.keys():
+            cookie_list = parse_setcookie_header(header_dict["Set-Cookie"])
+            for cookie in cookie_list:
+                cookie_details.append([dst, cookie["name"], "set", json.dumps(cookie), visit_id, time_stamp])
+        if "set-cookie" in header_dict.keys():
+            cookie_list = parse_setcookie_header(header_dict["set-cookie"])
+            for cookie in cookie_list:
+                cookie_details.append([dst, cookie["name"], "set", json.dumps(cookie), visit_id, time_stamp])
+    except Exception as e:
+        print("Error in http_cookies: getting cookie details")
+
+    return cookie_details
 
 def build_http_cookie_components(df_http_edges, df_http_nodes):
+
+    """
+    Function to extract HTTP cookie nodes (cookies set via HTTP headers).
+
+    Args:
+        df_http_edges: DataFrame representation of HTTP request edges 
+        df_http_nodes: DataFrame representation of HTTP request nodes
+    Returns:
+        df_http_cookie_nodes: DataFrame representation of HTTP cookie nodes
+        df_http_cookie_edges: DataFrame representation of HTTP cookie edges
+    """
 
     df_http_cookie_nodes = pd.DataFrame()
     df_http_cookie_edges = pd.DataFrame()
@@ -125,7 +155,6 @@ def build_http_cookie_components(df_http_edges, df_http_nodes):
             df_http_cookie_edges['response_status'] = "N/A"
             df_http_cookie_edges['post_body'] = np.nan
             df_http_cookie_edges['post_body_raw'] = np.nan
-            #df_http_cookie_edges['time_stamp'] = "N/A"
             
     except Exception as e:
         print("Error in http_cookie_components:", e)

@@ -8,7 +8,16 @@ import traceback
 import numpy as np
 
 def get_storage_name(arg):
-    """Function to get the storage names from the javascript table."""
+
+    """
+    Function to get the storage names from the javascript table.
+
+    Args:
+        arg: arguments column in javascript table.
+    Returns:
+        Storage name.
+    """
+
     try:
         return json.loads(arg)[0]
     except Exception as e:
@@ -16,7 +25,15 @@ def get_storage_name(arg):
 
 
 def get_storage_attr(arg):
-    """Function to get the storage related values from the javascript table."""
+
+    """
+    Function to get the storage values from the javascript table.
+
+    Args:
+        arg: arguments column in javascript table.
+    Returns:
+        Storage value.
+    """
 
     try:
         return json.dumps({"value": json.loads(arg)[1]})
@@ -25,7 +42,15 @@ def get_storage_attr(arg):
 
 
 def get_storage_action(symbol):
-    """Function to get the storage related actions from the javascript table."""
+
+    """
+    Function to get the storage related actions from the javascript table.
+
+    Args:
+        symbol: symbol column in javascript table.
+    Returns:
+        Storage action.
+    """
 
     try:
         result = re.search('Storage.(.*)Item', symbol)
@@ -35,7 +60,16 @@ def get_storage_action(symbol):
 
 
 def get_cookie_name(val, operation):
-    """Function to process cookie names from the javascript table."""
+
+    """
+    Function to get cookie names and values.
+
+    Args:
+        val: Cookie information which has to be processed.
+        operation: Operation on a cookie (set/get).
+    Returns:
+        nameval_list: 
+    """
 
     nameval_list = []
     try:
@@ -59,7 +93,15 @@ def get_cookie_name(val, operation):
 
 
 def process_cookie_call_stack(row):
-    """Function to process cookie call stacks."""
+
+    """
+    Function to process cookie call stacks.
+
+    Args:
+        row: Row of cookie DataFrame.
+    Returns:
+        edge_data: List of cookie call stack edges.
+    """
 
     cs = row['call_stack']
     operation = row['operation']
@@ -113,6 +155,16 @@ def process_cookie_call_stack(row):
 
 
 def build_storage_components(df_javascript):
+
+    """
+    Function to extract storage (local storage and cookie) nodes/edges set by JavaScript.
+
+    Args:
+        df_javascript: DataFrame representation of javascript table in OpenWPM.
+    Returns:
+        df_all_storage_nodes: DataFrame representation of storage nodes.
+        df_all_storage_edges: DataFrame representation of storage edges.
+    """
 
     df_all_storage_nodes = pd.DataFrame()
     df_all_storage_edges = pd.DataFrame()

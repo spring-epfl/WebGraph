@@ -6,6 +6,10 @@ import pandas as pd
 
 
 class Database:
+
+    """Database class to perform all functions associated with the OpenWPM crawl DB. 
+    """
+
     def __init__(self, database_filename: Path):
         self.database_filename = database_filename
         self.conn: Optional[sqlite3.Connection] = None
@@ -23,6 +27,20 @@ class Database:
 
 
     def website_from_visit_id(self, visit_id):
+
+        """
+        Function to get relevant table data for a particular website. 
+        This data is ued to build graphs.
+
+        Args:
+            visit_id: Visit ID of the website we want.
+        Returns:
+            df_requests: DataFrame representation of requests table in OpenWPM.
+            df_responses: DataFrame representation of responses table in OpenWPM.
+            df_redirects: DataFrame representation of redirects table in OpenWPM.
+            call_stacks: DataFrame representation of call_stacks table in OpenWPM.
+            javascript: DataFrame representation of javascript table in OpenWPM.
+        """
 
         if self.conn is None:
             raise sqlite3.ProgrammingError("Database not open")
@@ -58,6 +76,14 @@ class Database:
 
 
     def sites_visits(self):
+
+        """
+        Function to get site visit table data.
+
+        Returns:
+            DataFrame representation of the site_visits table for successfully crawled sites.
+        """
+
         df_successful_sites = pd.read_sql_query(
             "SELECT visit_id from crawl_history where "
             "command = 'GetCommand' and command_status = 'ok'",
