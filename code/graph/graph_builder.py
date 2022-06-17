@@ -57,7 +57,7 @@ def build_networkx_graph(pdf):
             return orig_attr[0]
 
         for item in orig_attr:
-            if 'top_level_url' in item:
+            if item and 'top_level_url' in item:
                 return json.loads(item)
         return ""
 

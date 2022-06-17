@@ -93,6 +93,6 @@ class Database:
         successful_vids = df_successful_sites['visit_id'].tolist()
 
         return pd.read_sql_query(
-            f"SELECT visit_id, site_url from site_visits where visit_id in {str(tuple(successful_vids))}",
+            f"SELECT visit_id, site_url from site_visits where visit_id in ({','.join([str(x) for x in tuple(successful_vids)])})",
             self.conn
         )
