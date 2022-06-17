@@ -20,6 +20,16 @@ ADBLOCK_LISTS = {
 
 
 def read_file_newline_stripped(fname):
+
+    """
+    Function to read filter list file.
+    
+    Args:
+        fname: File path.
+    Returns:
+        lines: List of file lines.
+    """
+
     with open(fname) as f:
         lines = f.readlines()
         lines = [x.strip() for x in lines]
@@ -27,6 +37,16 @@ def read_file_newline_stripped(fname):
 
 
 def get_resource_type(attr):
+
+    """
+    Function to get resource type of a node.
+    
+    Args:
+        attr: Node attributes.
+    Returns:
+        Resource type of node.
+    """
+
     try:
         attr = json.loads(attr)
         return attr['content_policy_type']
@@ -36,14 +56,17 @@ def get_resource_type(attr):
 
 
 def download_lists(filterlist_dir: Path, overwrite: bool = True):
+    
     """
-    Function to download the lists used in AdGraph.
+    Function to download the filter lists used for labelling.
+    
     Args:
         filterlist_dir: Path of the output directory to which filter lists should be written.
     Returns:
         Nothing, writes the lists to a directory.
+    
     This functions does the following:
-    1. Sends HTTP requests for the lists used in AdGraph.
+    1. Sends HTTP requests for the filter lists.
     2. Writes to an output directory.
     """
 
@@ -57,8 +80,20 @@ def download_lists(filterlist_dir: Path, overwrite: bool = True):
 
 
 def create_filterlist_rules(filterlist_dir):
+
+    """
+    Function to create AdBlockRules objects for the filterlists. 
+    
+    Args:
+        filterlist_dir: Path of the output directory to which filter lists should be written.
+    Returns:
+        filterlists: List of filter list names.
+        filterlist_rules: Dictionary of filter lists and their rules.
+    """
+
     filterlist_rules = {}
     filterlists = os.listdir(filterlist_dir)
+
     for fname in filterlists:
         rule_dict = {}
         rules = read_file_newline_stripped(os.path.join(filterlist_dir, fname))
@@ -78,6 +113,20 @@ def create_filterlist_rules(filterlist_dir):
 
 
 def match_url(domain_top_level, current_domain, current_url, resource_type, rules_dict):
+
+    """
+    Function to match node information with filter list rules.
+    
+    Args:
+        domain_top_level: eTLD+1 of visited page.
+        current_domain; Domain of request being labelled.
+        current_url: URL of request being labelled.
+        resource_type: Type of request being labelled (from content policy type).
+        rules_dict: Dictionary of filter list rules.
+    Returns:
+        Label indicating whether the rule should block the node (True/False).
+    """
+
     try:
         if domain_top_level == current_domain:
             third_party_check = False
@@ -137,41 +186,18 @@ def match_url(domain_top_level, current_domain, current_url, resource_type, rule
         print('current url', current_domain)
         return False
 
-
-def label_setter_data(row, filterlists, filterlist_rules):
-    try:
-        top_domain = row['top_level_domain']
-        setter_url = row['setter']
-        setter_domain = row['setter_domain']
-        resource_type = row['resource_type']
-        data_label = False
-
-        for fl in filterlists:
-            if top_domain and setter_domain:
-                list_label = match_url(top_domain, setter_domain, setter_url, resource_type, filterlist_rules[fl])
-                data_label = data_label | list_label
-            else:
-                data_label = "Error"
-    except:
-        data_label = "Error"
-
-    return data_label
-
-
-def label_storage_setters(df, filterlists, filterlist_rules):
-    df_storage = df[df['type'] == 'Storage']
-    df_storage = df_storage[['visit_id', 'name', 'setter', 'top_level_domain', 'setter_domain']]
-    df_others = df[df['type'] != 'Storage'].copy()
-    df_others['resource_type'] = df_others['attr'].apply(get_resource_type)
-    df_others = df_others[['name', 'resource_type']]
-    df_others = df_others.rename(columns={'name': 'setter'})
-    df_merged = df_storage.merge(df_others, on='setter')
-    df_merged = df_merged.drop_duplicates()
-    df_merged['setter_label'] = df_merged.apply(label_setter_data, filterlists=filterlists, filterlist_rules=filterlist_rules, axis=1)
-
-    return df_merged
-
 def label_node_data(row, filterlists, filterlist_rules):
+
+    """
+    Function to label a node with filter lists. 
+    
+    Args:
+        row: Row of node DataFrame.
+        filterlists: List of filter list names.
+        filterlist_rules: Dictionary of filter lists and their rules.
+    Returns:
+        data_label: Label for node (True/False).
+    """
 
     try:
         top_domain = row['top_level_domain']
@@ -193,6 +219,17 @@ def label_node_data(row, filterlists, filterlist_rules):
 
 
 def label_nodes(df, filterlists, filterlist_rules):
+
+    """
+    Function to label nodes with filter lists. 
+    
+    Args:
+        df: DataFrame of nodes.
+        filterlists: List of filter list names.
+        filterlist_rules: Dictionary of filter lists and their rules.
+    Returns:
+        df_nodes: DataFrame of labelled nodes.
+    """
 
     df_nodes = df[(df['type'] != 'Storage') & (df['type'] != 'Element')].copy()
     df_nodes['resource_type'] = df_nodes['attr'].apply(get_resource_type)
