@@ -6,14 +6,32 @@ import traceback
 import numpy as np 
 
 def get_attr(cpt, tlu):
-    """Function to set attributes for HTTP nodes."""
+
+    """
+    Function to process attributes for request nodes.
+
+    Args:
+        cpt: content policy type.
+        tlu: top level URL.
+    Returns:
+        Attribute string.
+    """
 
     record = {'content_policy_type': cpt, 'top_level_url': tlu}
     return json.dumps(record)
 
 
 def convert_type(orig_type, attr):
-    """Function to set high level category for nodes (Script/Document/HTTP)."""
+
+    """
+    Function to convert Request type to Script/Document types based on the content policy type attribute.
+
+    Args:
+        orig_type: Original type (Reuqest).
+        attr: Attributes of request.
+    Returns:
+        new_type: Changed type.
+    """
 
     attr = json.loads(attr)
     new_type = orig_type
@@ -25,11 +43,30 @@ def convert_type(orig_type, attr):
 
 
 def get_key(v1, v2):
+
+    """
+    Function to get key to link request/response/redirect with same IDs.
+
+    Args:
+        v1: Visit ID.
+        v2: Request ID.
+    Returns:
+        key
+    """
+
     return str(int(v1)) + "_" + str(int(v2))
 
 
 def process_attr(respattr):
-    """Function to build set headers as edge attributes."""
+
+    """
+    Function to process response headers,
+
+    Args:
+        respattr: Response headers.
+    Returns:
+        Processed headers as attributes.
+    """
 
     attr = {}
     try:
@@ -45,6 +82,15 @@ def process_attr(respattr):
 
 
 def process_redirects(df):
+
+    """
+    Function to process redirect data.
+
+    Args:
+        df: DataFrame of merged redirect request/responses.
+    Returns:
+        edges: DataFrame representation of redirects.
+    """
 
     header_list = df['respattr1'].append(
         df.iloc[-1:]['headers'], ignore_index=True)
@@ -67,6 +113,18 @@ def process_redirects(df):
 
 
 def get_redirect_edges(df_requests, df_redirects, df_responses):
+
+    """
+    Function to build redirects edges.
+
+    Args:
+        df_requests: DataFrame representation of requests table in OpenWPM.
+        df_redirects: DataFrame representation of redirects table in OpenWPM.
+        df_responses: DataFrame representation of responses table in OpenWPM.
+    Returns:
+        df_redirect_edges: DataFrame representation of redirect edges.
+        completed_ids: Request IDs of redirect edges.
+    """
 
     df_reqheaders = df_requests[['visit_id', 'request_id',
                                  'url', 'headers', 'top_level_url', 'time_stamp']]
@@ -96,6 +154,15 @@ def get_redirect_edges(df_requests, df_redirects, df_responses):
 
 
 def process_call_stack(row):
+
+    """
+    Function to process callstacks to get callstack edge data.
+
+    Args:
+        row: Row of callstack DataFrame.
+    Returns:
+        edge_data: callstack edge data
+    """
     
     cs_lines = row['call_stack'].split()
     urls = []
@@ -133,6 +200,18 @@ def process_call_stack(row):
 
 
 def get_cs_edges(df_requests, df_responses, call_stacks):
+
+    """
+    Function to build callstack edges.
+
+    Args:
+        df_requests: DataFrame representation of requests table in OpenWPM.
+        df_responses: DataFrame representation of responses table in OpenWPM.
+        call_stacks: DataFrame representation of call_stacks table in OpenWPM.
+    Returns:
+        df_cs_edges: DataFrame representation of callstack edges.
+        completed_ids: Request IDs of call stack edges.
+    """
    
     df_merge = pd.merge(df_requests, df_responses, on=[
                         "visit_id", "request_id"], how="inner")
@@ -167,7 +246,18 @@ def get_cs_edges(df_requests, df_responses, call_stacks):
 
 
 def get_normal_edges(df_requests, df_responses, completed_ids):
-    """Function to build edges that are not redirect edges."""
+
+    """
+    Function to build edges that are not redirect edges.
+
+    Args:
+        df_requests: DataFrame representation of requests table in OpenWPM.
+        df_responses: DataFrame representation of responses table in OpenWPM.
+        completed_ids: Request IDs that were redirect or call stack edges.
+    Returns:
+        df_normal_edges: DataFrame representation of non-redirect edges.
+    """
+
     df_remaining = df_requests[~df_requests['key'].isin(completed_ids)]
     df_remaining = pd.merge(df_remaining, df_responses, on=['key'])
     df_normal_edges = df_remaining[['visit_id_x', 'top_level_url', 'url_x', 'headers_x',
@@ -182,8 +272,21 @@ def get_normal_edges(df_requests, df_responses, completed_ids):
 
 def build_request_components(df_requests, df_responses, df_redirects, call_stacks):
 
+    """
+    Function to extract HTTP nodes/edges.
+
+    Args:
+        df_requests: DataFrame representation of requests table in OpenWPM.
+        df_responses: DataFrame representation of responses table in OpenWPM.
+        df_redirects: DataFrame representation of redirects table in OpenWPM.
+        call_stacks: DataFrame representation of call_stacks table in OpenWPM.
+    Returns:
+        df_request_nodes: DataFrame representation of request nodes.
+        df_request_edges: DataFrame representation of request edges.
+    """
+
     df_request_nodes = pd.DataFrame()
-    df_http_edges = pd.DataFrame()
+    df_request_edges = pd.DataFrame()
 
     try:
 
@@ -224,13 +327,13 @@ def build_request_components(df_requests, df_responses, df_redirects, call_stack
         df_normal_edges = get_normal_edges(
             df_requests, df_responses, completed_ids)
 
-        df_http_edges = pd.concat(
+        df_request_edges = pd.concat(
             [df_redirect_edges, df_cs_edges, df_normal_edges]).reset_index()
-        del df_http_edges['index']
-        df_http_edges['action'] = "N/A"
+        del df_request_edges['index']
+        df_request_edges['action'] = "N/A"
         
     except Exception as e:
         print("Error in request_components:", e)
         traceback.print_exc()
 
-    return df_request_nodes, df_http_edges
+    return df_request_nodes, df_request_edges
