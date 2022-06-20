@@ -26,7 +26,7 @@ def convert_attr(row):
         attr = json.dumps(attr)
         return attr
     except Exception as e:
-        print(e)
+        print("[ convert_attr ] : ERROR - ", e)
         return json.dumps(attr)
 
 def convert_subtype(arguments):
