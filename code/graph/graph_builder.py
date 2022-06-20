@@ -5,13 +5,14 @@ import numpy as np
 
 
 def build_networkx_graph(pdf):
+    
     """
     Function to build a networkX graph from a Pandas DataFrame.
 
     Args:
         pdf: DataFrame of nodes and edges.
     Returns:
-        G: networkX graph.
+        networkx_graph: networkX graph.
 
     This functions does the following:
 
