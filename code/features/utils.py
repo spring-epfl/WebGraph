@@ -471,17 +471,19 @@ def find_indirect_edges(G, df_graph):
     df_http_requests_merge = pd.merge(left=df_http_requests, right=df_http_requests, how='inner', left_on=['visit_id','dst'], right_on=['visit_id', 'src'])
     df_http_requests_merge = df_http_requests_merge[df_http_requests_merge['reqattr_x'].notnull()]
 
-    df_http_requests_merge['cookie_presence'] = df_http_requests_merge.apply(
-        axis=1,
-        func=lambda x: check_cookie_presence(x['reqattr_x'], x['dst_y'])
-      )
+    if len(df_http_requests_merge):
+      
+      df_http_requests_merge['cookie_presence'] = df_http_requests_merge.apply(
+          axis=1,
+          func=lambda x: check_cookie_presence(x['reqattr_x'], x['dst_y'])
+        )
 
-    df_get_url_edges = df_http_requests_merge[df_http_requests_merge['cookie_presence'] == True][['src_x', 'dst_y', 'attr_x']]
-    if len(df_get_url_edges) > 0:
-      df_get_url_edges.columns = ['src', 'dst', 'attr']
-      df_get_url_edges = df_get_url_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
-      df_get_url_edges['type'] = 'get_url'
-      df_edges = df_edges.append(df_get_url_edges, ignore_index=True)
+      df_get_url_edges = df_http_requests_merge[df_http_requests_merge['cookie_presence'] == True][['src_x', 'dst_y', 'attr_x']]
+      if len(df_get_url_edges) > 0:
+        df_get_url_edges.columns = ['src', 'dst', 'attr']
+        df_get_url_edges = df_get_url_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
+        df_get_url_edges['type'] = 'get_url'
+        df_edges = df_edges.append(df_get_url_edges, ignore_index=True)
 
   except Exception as e:
     traceback.print_exc()
