@@ -15,6 +15,7 @@ from graph.database import Database
 import labelling as ls
 from features.feature_extraction import extract_graph_features
 
+from utils import return_none_if_fail
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
@@ -39,41 +40,30 @@ def extract_features(pdf, networkx_graph, visit_id, config_info, ldb_file):
     df_features = extract_graph_features(pdf, networkx_graph, visit_id, ldb, config_info)
     return df_features
 
-
+@return_none_if_fail()
 def find_setter_domain(setter):
-    try:
-        domain = gs.get_domain(setter)
-        return domain
-    except:
-        return None
+    domain = gs.get_domain(setter)
+    return domain
 
-
+@return_none_if_fail(is_debug=True)
 def find_domain(row):
 
     domain = None
-
-    try:
-        node_type = row['type']
-        if (node_type == 'Document') or (node_type == 'Request') or (node_type == 'Script'):
-            domain = gs.get_domain(row['name'])
-        elif (node_type == 'Element'):
-            return domain
-        else:
-            return row['domain']
+    node_type = row['type']
+    if (node_type == 'Document') or (node_type == 'Request') or (node_type == 'Script'):
+        domain = gs.get_domain(row['name'])
+    elif (node_type == 'Element'):
         return domain
-    except Exception as e:
-        traceback.print_exc()
-        return None
+    else:
+        return row['domain']
+    return domain
 
-
+@return_none_if_fail()
 def find_tld(top_level_url):
-    try:
-        if top_level_url:
-            tld = gs.get_domain(top_level_url)
-            return tld
-        else:
-            return None
-    except:
+    if top_level_url:
+        tld = gs.get_domain(top_level_url)
+        return tld
+    else:
         return None
 
 def get_party(row):
@@ -151,19 +141,16 @@ def build_graph(database: Database, visit_id):
 
     return df_all_graph
 
+def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, overwrite):
 
-def label_data(df, filterlists, filterlist_rules):
-    df_labelled = pd.DataFrame()
-
-    try:
-        df_nodes = df[df['graph_attr'] == "Node"]
-        df_labelled = ls.label_nodes(df_nodes, filterlists, filterlist_rules)
-    except Exception as e:
-        print("Error labelling:", e)
-
-    return df_labelled
-
-def apply_tasks(df, visit_id, config_info, ldb_file, output_dir, overwrite):
+    """ Sequence of tasks to apply on each website crawled.
+    :param df: the graph data (nodes and edges) in pandas df.
+    :param visit_id: visit ID of a crawl URL.
+    :param config_info: dictionary containing features to use.
+    :param ldb_file: path to ldb file.
+    :param output_dir: path to the output directory.
+    :param overwrite: set True to overwrite the content of the output directory.
+    """
 
     # Build the graph
     print(df.iloc[0]['top_level_url'], visit_id, len(df))
@@ -191,7 +178,7 @@ def apply_tasks(df, visit_id, config_info, ldb_file, output_dir, overwrite):
         print("Extracted features:", end-start)
 
         # #Label data
-        # df_labelled = label_data(pdf, filterlists, filterlist_rules)
+        # df_labelled = ls.label_data(pdf, filterlists, filterlist_rules)
         # if len(df_labelled) > 0:
         #     df_labelled_path = output_dir / "labelled.csv"
         #     if overwrite or not df_labelled_path.is_file():
