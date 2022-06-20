@@ -13,7 +13,7 @@ import leveldb
 import graph as gs
 from graph.database import Database
 import labelling as ls
-from feature_scripts.feature_extraction import extract_graph_features
+from features.feature_extraction import extract_graph_features
 
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
