@@ -1,0 +1,15 @@
+graph_data: /home/ubuntu/data/graph_data_supadv2.csv
+content_ldb: /home/ubuntu/data/content.ldb/
+feature_config: /home/ubuntu/code/features.yaml
+vid_file: /home/ubuntu/data/chosen_ids_supadv2.json
+
+model:  /home/ubuntu/data/model_0_ag.joblib
+pred_file: /home/ubuntu/data/tp_0_ag
+
+result_dir: /home/ubuntu/supadv2_adgraph/
+
+mutation_style:
+  - node_addition
+  #- storage_removal
+  #- redirect_removal
+  #- url_obfuscation

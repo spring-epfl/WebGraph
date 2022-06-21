@@ -1,0 +1,21 @@
+graph_node_data: /home/ubuntu/crawl_10k/graph_data_nodes_10k.csv
+graph_edge_data: /home/ubuntu/crawl_10k/graph_data_edges_10k_500_1000.csv
+graph_data: /home/ubuntu/crawl_10k_WG_obfs_first/graph_500_1000.csv
+tag_dict: /home/ubuntu/crawl_10k/tag_10k.json
+async_dict: /home/ubuntu/crawl_10k/async_10k.json
+defer_dict: /home/ubuntu/crawl_10k/defer_10k.json
+content_ldb: /home/ubuntu/crawl_10k/content.ldb/
+feature_config: features.yaml
+
+feature_data: /home/ubuntu/crawl_10k_WG_obfs_first/features_5000_5500.csv
+labelled_data: /home/ubuntu/crawl_10k_WG_obfs_first/labelled/features_5000_5500_labelled.csv
+mapping_dir: /home/ubuntu/crawl_10k_WG_obfs_first/mapping
+labelled_dir: /home/ubuntu/crawl_10k_WG/labelled/
+test_dir: /home/ubuntu/crawl_10k_WG/labelled/
+result_crossval: results_flow/
+result_traintest: /home/ubuntu/crawl_10k_WG/results/structure/
+trained_model: /home/ubuntu/crawl_10k_WG/results/nodomain/
+
+obfuscated_data: /home/ubuntu/obfs_al/graph_0_500.csv
+obfuscated_log: /home/ubuntu/robustness/site_list
+
