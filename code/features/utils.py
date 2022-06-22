@@ -160,7 +160,9 @@ def get_redirect_depths(df_graph):
   try:
 
     http_status = [300, 301, 302, 303, 307, 308]
+    http_status = http_status + [str(x) for x in http_status]
     df_redirect = df_graph[df_graph['response_status'].isin(http_status)]
+
     G_red = gs.build_networkx_graph(df_redirect)
 
     for n in G_red.nodes():
@@ -185,7 +187,6 @@ def get_redirect_depths(df_graph):
     return dict_redirect
 
   except Exception as e:
-    LOGGER.warning("Error in redirect:", exc_info=True)
     return dict_redirect
 
 def find_urls(df):
@@ -422,8 +423,7 @@ def find_indirect_edges(G, df_graph):
       df_get_edges['cookie'] = df_get_edges['attr']
       df_get_edges = df_get_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
       df_get_edges['type'] = 'set_get'
-      df_edges = df_edges.append(df_get_edges, ignore_index=True)
-
+      df_edges = pd.concat([df_edges, df_get_edges], ignore_index=True)
 
     #Nodes that set to nodes that modify
     all_storage_set = df_graph[(df_graph['action'] == 'set') | \
@@ -432,8 +432,7 @@ def find_indirect_edges(G, df_graph):
     df_modified_edges = all_storage_set.groupby('dst').apply(find_modified_storage)
     if len(df_modified_edges) > 0:
       df_modified_edges['type'] = 'set_modify'
-      df_edges = df_edges.append(df_modified_edges, ignore_index=True)
-
+      df_edges = pd.concat([df_edges, df_modified_edges], ignore_index=True)
 
     #Nodes that set to URLs with cookie value
     df_set_url_edges = pd.DataFrame()
@@ -461,12 +460,12 @@ def find_indirect_edges(G, df_graph):
           src = df_cookie_set[df_cookie_set['cookie_val'] == cookie_value]['src'].iloc[0]
           dst = dest
           attr = 1
-          df_set_url_edges = df_set_url_edges.append({'src' : src, 'dst' : dst, 'attr': attr}, ignore_index=True)
+          df_set_url_edges = pd.concat([df_set_url_edges, pd.DataFrame.from_records([{'src' : src, 'dst' : dst, 'attr': attr}])], ignore_index=True)
 
     if len(df_set_url_edges) > 0:
       df_set_url_edges = df_set_url_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
       df_set_url_edges['type'] = 'set_url'
-      df_edges = df_edges.append(df_set_url_edges, ignore_index=True)
+      df_edges = pd.concat([df_edges, df_set_url_edges], ignore_index=True)
 
     #Nodes that get to URLs with cookie value
     df_http_requests = df_graph[(df_graph['reqattr'] != 'CS') & (df_graph['src'] != 'N/A') & (df_graph['action'] != 'CS') & (df_graph['graph_attr'] != 'EdgeWG')]
@@ -485,7 +484,7 @@ def find_indirect_edges(G, df_graph):
         df_get_url_edges.columns = ['src', 'dst', 'attr']
         df_get_url_edges = df_get_url_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
         df_get_url_edges['type'] = 'get_url'
-        df_edges = df_edges.append(df_get_url_edges, ignore_index=True)
+        df_edges = pd.concat([df_edges, df_get_url_edges], ignore_index=True)
 
   except Exception as e:
     LOGGER.exception("An error occurred when extracting shared information edges.")

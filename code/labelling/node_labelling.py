@@ -54,7 +54,6 @@ def get_resource_type(attr):
         attr = json.loads(attr)
         return attr['content_policy_type']
     except Exception as e:
-        LOGGER.warning("error in type", exc_info=True)
         return None
 
 

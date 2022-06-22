@@ -55,7 +55,7 @@ def get_redirect_features(df_graph, node, dict_redirect):
   """
 
   http_status = [300, 301, 302, 303, 307, 308]
-  #http_status = [str(x) for x in http_status]
+  http_status = http_status + [str(x) for x in http_status]
 
   redirects_sent = df_graph[(df_graph['src'] == node) & (df_graph['response_status'].isin(http_status))]
   redirects_rec = df_graph[(df_graph['dst'] == node) & (df_graph['response_status'].isin(http_status))]
