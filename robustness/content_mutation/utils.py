@@ -27,7 +27,7 @@ def find_tracker_predictions(predictions):
 			parts = line.strip().split("|$|")
 			pred = parts[1].strip()
 			name = parts[2].strip()
-			vid = parts[3].strip()
+			vid = float(parts[3].strip())
 			if (pred == "True"):
 				if vid not in tracker_dict:
 					tracker_dict[vid] = []
