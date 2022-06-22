@@ -176,7 +176,7 @@ def get_indirect_features(G, df_graph, node):
         min_out_weights = min(out_weights)
         max_out_weights = max(out_weights)
   except Exception as e:
-    print(e)
+    print("[ get_indirect_features ] : ERROR - ", e)
 
   indirect_features = [in_degree, out_degree, ancestors, descendants, closeness_centrality, \
                       average_degree_connectivity, eccentricity, mean_in_weights, \
@@ -229,7 +229,7 @@ def get_indirect_all_features(G, node):
       except Exception as e:
         eccentricity = -1
   except Exception as e:
-    print(e)
+    print("[ get_indirect_all_features ] : ERROR - ", e)
 
   indirect_all_features = [in_degree, out_degree, ancestors, descendants, \
       closeness_centrality, average_degree_connectivity, eccentricity]

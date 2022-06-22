@@ -53,7 +53,7 @@ def get_script_content_features(G, df_graph, node, ldb):
       except Exception as e:
         continue
   except Exception as e:
-    print(e)
+    print("[ get_script_content_features ] : ERROR - ", e)
 
   sc_features = [ascendant_script_has_eval_or_function, ascendant_script_has_fp_keyword, \
               ascendant_script_length]
