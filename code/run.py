@@ -194,7 +194,7 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
 def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, output_dir: Path, overwrite=True):
     
     number_failures = 0
-
+    
     ls.download_lists(filterlist_dir, overwrite)
     filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
     config_info = load_config_info(features_file)
