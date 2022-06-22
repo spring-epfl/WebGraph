@@ -13,6 +13,7 @@ import leveldb
 import graph as gs
 from graph.database import Database
 import labelling as ls
+import labelling.filterlists as fs
 from features.feature_extraction import extract_graph_features
 
 from utils import return_none_if_fail
@@ -141,7 +142,7 @@ def build_graph(database: Database, visit_id):
 
     return df_all_graph
 
-def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, overwrite):
+def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, overwrite, filterlists, filterlist_rules):
 
     """ Sequence of tasks to apply on each website crawled.
     :param df: the graph data (nodes and edges) in pandas df.
@@ -178,7 +179,7 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
         print("Extracted features:", end-start)
 
         #Label data
-        df_labelled = label_data(df, filterlists, filterlist_rules)
+        df_labelled = ls.label_data(df, filterlists, filterlist_rules)
         if len(df_labelled) > 0:
             df_labelled_path = output_dir / "labelled.csv"
             if overwrite or not df_labelled_path.is_file():
@@ -195,8 +196,8 @@ def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, outpu
     
     number_failures = 0
     
-    ls.download_lists(filterlist_dir, overwrite)
-    filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
+    fs.download_lists(filterlist_dir, overwrite)
+    filterlists, filterlist_rules = fs.create_filterlist_rules(filterlist_dir)
     config_info = load_config_info(features_file)
 
     output_dir.mkdir(parents=True, exist_ok=True)

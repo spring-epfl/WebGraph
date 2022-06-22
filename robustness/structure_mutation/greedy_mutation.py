@@ -1,5 +1,6 @@
 import graph as gs
 import labelling as ls
+import labelling.filterlists as fs
 from features.feature_extraction import extract_graph_features
 
 from utils import *
@@ -203,8 +204,8 @@ def pipeline(config):
 		vid_list = json.loads(f.read())['vids']
 		vid_list = sorted(vid_list)
 
-	ls.download_lists(filterlist_dir, overwrite)
-    filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
+	fs.download_lists(filterlist_dir, overwrite)
+    filterlists, filterlist_rules = fs.create_filterlist_rules(filterlist_dir)
 
 	for visit_id in vid_list:
 
