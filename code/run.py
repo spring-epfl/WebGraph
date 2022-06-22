@@ -156,6 +156,7 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
     print(df.iloc[0]['top_level_url'], visit_id, len(df))
     graph_columns = config_info['graph_columns']
     feature_columns = config_info['feature_columns']
+    label_columns = config_info['label_columns']
     
     try:
         start = time.time()
@@ -180,11 +181,11 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
         #Label data
         df_labelled = label_data(df, filterlists, filterlist_rules)
         if len(df_labelled) > 0:
-            df_labelled_path = output_dir / "labelled.csv"
-            if overwrite or not df_labelled_path.is_file():
-                df_labelled.to_csv(str(df_labelled_path))
+            labels_path = output_dir / "labelled.csv"
+            if overwrite or not labels_path.is_file():
+                df_labelled.reindex(columns=label_columns).to_csv(str(labels_path))
             else:
-                df_labelled.to_csv(str(df_labelled_path), mode='a', header=False)
+                df_labelled.reindex(columns=label_columns).to_csv(str(labels_path), mode='a', header=False)
         
     except Exception as e:
         print("Errored in pipeline:", e)
