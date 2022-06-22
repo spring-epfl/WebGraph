@@ -142,7 +142,7 @@ def build_graph(database: Database, visit_id):
 
     return df_all_graph
 
-def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, overwrite):
+def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, overwrite, filterlists, filterlist_rules):
 
     """ Sequence of tasks to apply on each website crawled.
     :param df: the graph data (nodes and edges) in pandas df.
@@ -180,7 +180,7 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
         LOGGER.info("Extracted features: %d", end-start)
 
         #Label data
-        df_labelled = label_data(df, filterlists, filterlist_rules)
+        df_labelled = ls.label_data(df, filterlists, filterlist_rules)
         if len(df_labelled) > 0:
             labels_path = output_dir / "labelled.csv"
             if overwrite or not labels_path.is_file():
