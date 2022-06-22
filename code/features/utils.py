@@ -474,9 +474,9 @@ def find_indirect_edges(G, df_graph):
     if len(df_http_requests_merge):
       
       df_http_requests_merge['cookie_presence'] = df_http_requests_merge.apply(
-          axis=1,
-          func=lambda x: check_cookie_presence(x['reqattr_x'], x['dst_y'])
-        )
+        axis=1,
+        func=lambda x: check_cookie_presence(x['reqattr_x'], x['dst_y'])
+      )
 
       df_get_url_edges = df_http_requests_merge[df_http_requests_merge['cookie_presence'] == True][['src_x', 'dst_y', 'attr_x']]
       if len(df_get_url_edges) > 0:
