@@ -16,6 +16,8 @@ import labelling as ls
 from features.feature_extraction import extract_graph_features
 
 from utils import return_none_if_fail
+from logger import LOGGER
+
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
@@ -84,15 +86,14 @@ def find_setters(df_all_storage_nodes, df_http_cookie_nodes, df_all_storage_edge
 
         df_storage_edges = pd.concat([df_all_storage_edges, df_http_cookie_edges])
         if len(df_storage_edges) > 0:
-            df_storage_sets = df_storage_edges[(df_storage_edges['action'] == 'set') 
+            df_storage_sets = df_storage_edges[(df_storage_edges['action'] == 'set')
                                 | (df_storage_edges['action'] == 'set_js')]
             df_setters = gs.get_original_cookie_setters(df_storage_sets)
             df_storage_nodes = pd.concat([df_all_storage_nodes, df_http_cookie_nodes])
             df_setter_nodes = df_storage_nodes.merge(df_setters, on=['visit_id', 'name'], how='outer')
-        
+
     except Exception as e:
-        print("Error getting setter:", e)
-        traceback.print_exc()
+        LOGGER.warning("Error getting setter", exc_info=True)
 
     return df_setter_nodes
 
@@ -118,7 +119,7 @@ def build_graph(database: Database, visit_id):
     df_all_nodes['setter_domain'] = df_all_nodes['setter'].apply(find_setter_domain)
     df_all_nodes = df_all_nodes.drop_duplicates()
     df_all_nodes['graph_attr'] = "Node"
-    
+
     df_all_edges = pd.concat([df_js_edges, df_request_edges, df_all_storage_edges, df_http_cookie_edges])
     df_all_edges = df_all_edges.drop_duplicates()
     df_all_edges['top_level_domain'] = df_all_edges['top_level_url'].apply(find_tld)
@@ -153,11 +154,11 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
     """
 
     # Build the graph
-    print(df.iloc[0]['top_level_url'], visit_id, len(df))
+    LOGGER.info("%s %d %d", df.iloc[0]['top_level_url'], visit_id, len(df))
     graph_columns = config_info['graph_columns']
     feature_columns = config_info['feature_columns']
     label_columns = config_info['label_columns']
-    
+
     try:
         start = time.time()
         graph_path = output_dir / "graph.csv"
@@ -165,18 +166,18 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
             df.reindex(columns=graph_columns).to_csv(str(graph_path))
         else:
             df.reindex(columns=graph_columns).to_csv(str(graph_path), mode='a', header=False)
-        
+
         networkx_graph = gs.build_networkx_graph(df)
-        
+
         df_features = extract_features(df, networkx_graph, visit_id, config_info, ldb_file)
         features_path = output_dir / "features.csv"
-        
+
         if overwrite or not features_path.is_file():
             df_features.reindex(columns=feature_columns).to_csv(str(features_path))
         else:
             df_features.reindex(columns=feature_columns).to_csv(str(features_path), mode='a', header=False)
         end = time.time()
-        print("Extracted features:", end-start)
+        LOGGER.info("Extracted features: %d", end-start)
 
         #Label data
         df_labelled = label_data(df, filterlists, filterlist_rules)
@@ -186,16 +187,15 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
                 df_labelled.reindex(columns=label_columns).to_csv(str(labels_path))
             else:
                 df_labelled.reindex(columns=label_columns).to_csv(str(labels_path), mode='a', header=False)
-        
+
     except Exception as e:
-        print("Errored in pipeline:", e)
-        traceback.print_exc()
+        LOGGER.warning("Errored in pipeline", exc_info=True)
 
 
 def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, output_dir: Path, overwrite=True):
-    
+
     number_failures = 0
-    
+
     ls.download_lists(filterlist_dir, overwrite)
     filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
     config_info = load_config_info(features_file)
@@ -222,7 +222,7 @@ def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, outpu
                 tqdm.write(str(pdf.shape))
                 pdf.groupby(['visit_id', 'top_level_domain']).apply(apply_tasks, visit_id, config_info, ldb_file, output_dir, overwrite, filterlists, filterlist_rules)
                 end = time.time()
-                print("Done!", end - start)
+                LOGGER.info("Done! %d", end - start)
 
             except Exception as e:
                 number_failures += 1
@@ -233,11 +233,11 @@ def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, outpu
             #break
 
     percent = (number_failures/len(sites_visits))*10
-    print(f"Fail: {number_failures}, Total: {len(sites_visits)}, Percentage:{percent}", db_file)
+    LOGGER.info(f"Fail: {number_failures}, Total: {len(sites_visits)}, Percentage:{percent} %s", str(db_file))
 
 
 def main(program: str, args: List[str]):
-    
+
     parser = argparse.ArgumentParser(prog=program, description="Run a classification pipeline.")
     parser.add_argument(
         "--input-db",
