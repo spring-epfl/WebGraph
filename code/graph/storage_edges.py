@@ -7,6 +7,9 @@ from .utils import *
 import traceback
 import numpy as np
 
+from logger import LOGGER
+
+
 def get_storage_name(arg):
 
     """
@@ -68,7 +71,7 @@ def get_cookie_name(val, operation):
         val: Cookie information which has to be processed.
         operation: Operation on a cookie (set/get).
     Returns:
-        nameval_list: 
+        nameval_list:
     """
 
     nameval_list = []
@@ -149,7 +152,7 @@ def process_cookie_call_stack(row):
                 edge_data.append([new_urls[-1], cookie_name[0], operation,
                                   json.dumps({'value': cookie_name[1]}), visit_id, ts])
     except Exception as e:
-        print("Error in processing cookie call stacks", e)
+        LOGGER.warning("Error in processing cookie call stacks", exc_info=True)
 
     return edge_data
 
@@ -243,10 +246,9 @@ def build_storage_components(df_javascript):
         df_all_storage_edges['response_status'] = "N/A"
         df_all_storage_edges['post_body'] = np.nan
         df_all_storage_edges['post_body_raw'] = np.nan
-    
-    except Exception as e:
-        traceback.print_exc()
-        print("Error in storage_components:", e)
+
+    except Exception:
+        LOGGER.warning("Error in storage_components:", exc_info=True)
 
     return df_all_storage_nodes, df_all_storage_edges
 

@@ -3,6 +3,9 @@ import networkx as nx
 import json
 import numpy as np
 
+from logger import LOGGER
+
+
 def get_dataflow_additional(df_graph, node):
 
   created_elements = df_graph[(df_graph['src'] == node) & \
@@ -36,7 +39,7 @@ def get_structure_additional(G, df_graph, node):
     ancestors_ps1 = [G.nodes[x]['domain'] for x in ancestors]
     descendants_ps1 = [G.nodes[x]['domain'] for x in descendants]
     node_ps1 = G.nodes[node]['domain']
-    
+
     num_diff_domain_predecessors = len([x for x in predecessors_ps1 if x != node_ps1])
     num_diff_domain_successors = len([x for x in successors_ps1 if x != node_ps1])
     num_diff_domain_ancestors = len([x for x in ancestors_ps1 if x != node_ps1])
@@ -51,7 +54,7 @@ def get_structure_additional(G, df_graph, node):
 
   sa_feature_names = ['num_cs_edges_sent', 'num_cs_edges_rec', 'num_diff_domain_predecessors', \
       'num_diff_domain_successors', 'num_diff_domain_ancestors', 'num_diff_domain_descendants']
-  
+
   return sa_features, sa_feature_names
 
 def get_response_features(df_graph, node):
@@ -139,7 +142,7 @@ def get_cookie_features(G, df_graph, node):
           if cookie_domain != top_level_domain:
             num_diff_domain += 1
     except Exception as e:
-      print("Cookie features error", e)
+      LOGGER.warning("Cookie features error", exc_info=True)
 
   if len(size_name) > 0 and len(size_val) > 0:
     max_size_name = max(size_name)

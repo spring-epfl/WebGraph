@@ -1,9 +1,9 @@
 import pandas as pd
 import json
 import re
-import multidict
-import traceback
-import numpy as np 
+import numpy as np
+
+from logger import LOGGER
 
 def get_attr(cpt, tlu):
 
@@ -163,7 +163,7 @@ def process_call_stack(row):
     Returns:
         edge_data: callstack edge data
     """
-    
+
     cs_lines = row['call_stack'].split()
     urls = []
     new_urls = []
@@ -195,7 +195,7 @@ def process_call_stack(row):
     if len(new_urls) > 0:
         edge_data.append([new_urls[-1], row['name'], row['reqattr'], row['respattr'],
                           row['response_status'], row['time_stamp'], row['visit_id'], row['content_hash'], row['post_body'], row['post_body_raw']])
-   
+
     return edge_data
 
 
@@ -212,7 +212,7 @@ def get_cs_edges(df_requests, df_responses, call_stacks):
         df_cs_edges: DataFrame representation of callstack edges.
         completed_ids: Request IDs of call stack edges.
     """
-   
+
     df_merge = pd.merge(df_requests, df_responses, on=[
                         "visit_id", "request_id"], how="inner")
     call_stack_nodup = call_stacks[[
@@ -223,7 +223,7 @@ def get_cs_edges(df_requests, df_responses, call_stacks):
                          'headers_y', 'time_stamp_x', 'response_status', 'post_body', 'post_body_raw', 'content_hash', 'call_stack', 'key_x']]
     df_merge = df_merge.rename(columns={'url_x': 'name', 'headers_x': 'reqattr', 'headers_y': 'respattr',
                                         'time_stamp_x': 'time_stamp', 'key_x': 'key'})
-    
+
     df_merge['cs_edges'] = df_merge.apply(process_call_stack, axis=1)
     df = df_merge[['top_level_url', 'cs_edges']]
     df = df.explode('cs_edges').dropna()
@@ -305,7 +305,7 @@ def build_request_components(df_requests, df_responses, df_redirects, call_stack
         df_request_nodes['type'] = df_requests[['type', 'attr']].apply(
             lambda x: convert_type(*x), axis=1)
         df_request_nodes = df_request_nodes.rename(columns={'url': 'name'})
-        
+
         # Redirect edges. To be inserted
         if len(df_redirects) > 0:
             df_redirects['old_request_id'] = df_redirects['old_request_id'].apply(
@@ -331,9 +331,8 @@ def build_request_components(df_requests, df_responses, df_redirects, call_stack
             [df_redirect_edges, df_cs_edges, df_normal_edges]).reset_index()
         del df_request_edges['index']
         df_request_edges['action'] = "N/A"
-        
+
     except Exception as e:
-        print("Error in request_components:", e)
-        traceback.print_exc()
+        LOGGER.warning("Error in request_components:", exc_info=True)
 
     return df_request_nodes, df_request_edges

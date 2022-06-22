@@ -6,6 +6,8 @@ import pandas as pd
 import requests
 from adblockparser import AdblockRules
 
+from logger import LOGGER
+
 
 ADBLOCK_LISTS = {
     'easylist': 'https://easylist.to/easylist/easylist.txt',
@@ -24,7 +26,7 @@ def read_file_newline_stripped(fname):
 
     """
     Function to read filter list file.
-    
+
     Args:
         fname: File path.
     Returns:
@@ -41,7 +43,7 @@ def get_resource_type(attr):
 
     """
     Function to get resource type of a node.
-    
+
     Args:
         attr: Node attributes.
     Returns:
@@ -56,15 +58,15 @@ def get_resource_type(attr):
 
 
 def download_lists(filterlist_dir: Path, overwrite: bool = True):
-    
+
     """
     Function to download the filter lists used for labelling.
-    
+
     Args:
         filterlist_dir: Path of the output directory to which filter lists should be written.
     Returns:
         Nothing, writes the lists to a directory.
-    
+
     This functions does the following:
     1. Sends HTTP requests for the filter lists.
     2. Writes to an output directory.
@@ -82,8 +84,8 @@ def download_lists(filterlist_dir: Path, overwrite: bool = True):
 def create_filterlist_rules(filterlist_dir):
 
     """
-    Function to create AdBlockRules objects for the filterlists. 
-    
+    Function to create AdBlockRules objects for the filterlists.
+
     Args:
         filterlist_dir: Path of the output directory to which filter lists should be written.
     Returns:
@@ -116,7 +118,7 @@ def match_url(domain_top_level, current_domain, current_url, resource_type, rule
 
     """
     Function to match node information with filter list rules.
-    
+
     Args:
         domain_top_level: eTLD+1 of visited page.
         current_domain; Domain of request being labelled.
@@ -181,16 +183,14 @@ def match_url(domain_top_level, current_domain, current_url, resource_type, rule
         return rules.should_block(current_url, options)
 
     except Exception as e:
-        print('Exception encountered', e)
-        print('top url', domain_top_level)
-        print('current url', current_domain)
+        LOGGER.exception("An exception occurred\ntop url %s\ncurrent url %s", domain_top_level, current_domain)
         return False
 
 def label_node_data(row, filterlists, filterlist_rules):
 
     """
-    Function to label a node with filter lists. 
-    
+    Function to label a node with filter lists.
+
     Args:
         row: Row of node DataFrame.
         filterlists: List of filter list names.
@@ -212,8 +212,8 @@ def label_node_data(row, filterlists, filterlist_rules):
                 data_label = data_label | list_label
             else:
                 data_label = "Error"
-    except Exception as e:
-        print('Error in node labelling:', e)
+    except Exception:
+        LOGGER.warning('Error in node labelling:', exc_info=True)
         data_label = "Error"
 
     return data_label
@@ -222,8 +222,8 @@ def label_node_data(row, filterlists, filterlist_rules):
 def label_nodes(df, filterlists, filterlist_rules):
 
     """
-    Function to label nodes with filter lists. 
-    
+    Function to label nodes with filter lists.
+
     Args:
         df: DataFrame of nodes.
         filterlists: List of filter list names.
@@ -247,6 +247,6 @@ def label_data(df, filterlists, filterlist_rules):
         df_nodes = df[df['graph_attr'] == "Node"]
         df_labelled = label_nodes(df_nodes, filterlists, filterlist_rules)
     except Exception as e:
-        print("Error labelling:", e)
+        LOGGER.warning("Error labelling:", exc_info=True)
 
     return df_labelled
