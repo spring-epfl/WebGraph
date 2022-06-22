@@ -8,9 +8,10 @@ import os
 from collections import Counter 
 from datetime import datetime
 from random import randint
+from yaml import full_load
 
-from feature_extraction import *
-from data_labelling import *
+from features.feature_extraction import extract_graph_features
+import labelling as ls
 from training_save import *
 
 import logging
@@ -19,18 +20,16 @@ from logging.config import fileConfig
 fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
+def load_config_info(filename):
+    
+    with open(filename) as file:
+        return full_load(file)
 
 def read_graph_file(graph_fname, visit_id):
 
     df_graph = pd.read_csv(graph_fname)
     df_graph = df_graph[df_graph['visit_id'] == visit_id]
-    
     return df_graph
-
-def build_original_graph(df):
-
-    G = build_graph(df)
-    return G
 
 def check_third_party(row):
 
@@ -43,6 +42,32 @@ def check_third_party(row):
     except Exception as e:
         return False
     return False
+
+def choose_third_party(df_third_party, df_third_party_ads):
+
+    entities = df_third_party_ads[df_third_party_ads['domain'].notnull()]['domain'].tolist()
+    if len(entities) > 0:
+        choose_third_party = Counter(entities).most_common()[0][0]
+        df_chosen_nodes = df_third_party[df_third_party['domain'] == choose_third_party]
+        return df_chosen_nodes
+    else:
+        return None
+
+def find_third_parties_domain(df, pred_dict):
+
+    df_third_party = find_all_third_parties(df)
+    df_third_party_ads = pd.DataFrame()
+
+    if len(df_third_party) > 0:
+        df_third_party['choose'] = df_third_party.apply(get_ads, args=(pred_dict,), axis=1)
+        df_third_party_ads = df_third_party[df_third_party['choose'] == True]
+        df_third_party_ads = df_third_party_ads.drop(columns=['choose'])
+    return df_third_party, df_third_party_ads
+
+def find_all_third_parties(df):
+
+    df_third_party = df[(df['is_third_party'] == True) & (df['top_level_url'].notnull())]
+    return df_third_party
 
 def get_tp_nodes(df, pred_dict, choice=True):
 
@@ -76,18 +101,14 @@ def read_predictions(pred_file):
     return pred_dict
 
 
-def extract_and_classify(df_graph_vid, G, result_dir, folder_tag, visit_id, ldb, feature_config, clf):
+def extract_and_classify(df_graph_vid, G, result_dir, folder_tag, visit_id, 
+    ldb, feature_config, clf, filterlists, filterlist_rules):
 
     test_result_dir = os.path.join(result_dir, folder_tag)
     if not os.path.exists(test_result_dir):
         os.mkdir(test_result_dir)
-
-    feature_type_set = feature_config['feature_set']
-    feature_list = []
-    for feature_type in feature_type_set:
-        feature_list += feature_config[feature_type]
     
-    df_features = extract_features(df_graph_vid, G, visit_id, config_info, ldb_file)
+    df_features = extract_graph_features(df_graph_vid, G, visit_id, ldb, feature_config)
     logger.info("Extracted features")
     df_labelled = label_data(df_graph_vid, filterlists, filterlist_rules)
     logger.info("Labelled data")
@@ -95,11 +116,11 @@ def extract_and_classify(df_graph_vid, G, result_dir, folder_tag, visit_id, ldb,
     df_labelled = df_labelled[~df_labelled['name'].str.contains('_fake')]
     result =  classify_clf(clf, df_labelled, feature_list, test_result_dir)
     report = describe_classif_reports([result], test_result_dir)
-    print_stats(report, test_result_dir)
+    #print_stats(report, test_result_dir)
 
     return len(df_labelled)
 
-def read_pred(fname):
+def read_prediction_df(fname):
     
     data_dict = {}
     with open(fname) as f:
@@ -129,8 +150,8 @@ def mutate_content(df_graph_vid, df_nodes, adv_node_names, top_level_url):
 
     df_graph_new = df_graph_vid.copy().replace({'name' : mapping_dict, 'src' : mapping_dict, 'dst' : mapping_dict})
     df_nodes_mut = df_nodes.copy().replace({'name' : mapping_dict})
-    G_new = build_graph(df_graph_new)
-
+    G_new = gs.build_networkx_graph(df_graph_new)
+    
     return G_new, df_graph_new, df_nodes_mut, mapping_dict, mutated_adv_node_names
 
 def id_generator(size=6, chars=string.ascii_letters + string.digits):
@@ -418,22 +439,6 @@ def find_domain(name):
     except:
         return None
 
-def find_all_third_parties(df):
-
-    df_third_party = df[(df['is_third_party'] == True) & (df['top_level_url'].notnull())]
-    return df_third_party
-
-def find_third_parties_domain(df, pred_dict):
-
-    df_third_party = df[(df['is_third_party'] == True) & (df['top_level_url'].notnull())]
-    df_third_party_ads = pd.DataFrame()
-
-    if len(df_third_party) > 0:
-        df_third_party['choose'] = df_third_party.apply(get_ads, args=(pred_dict,), axis=1)
-        df_third_party_ads = df_third_party[df_third_party['choose'] == True]
-        df_third_party_ads = df_third_party_ads.drop(columns=['choose'])
-    return df_third_party, df_third_party_ads
-
 def get_ads(df, pred_dict):
 
     key = str(df['visit_id']) + "_" + df['name']
@@ -443,16 +448,6 @@ def get_ads(df, pred_dict):
             return True
         else:
             return False
-    else:
-        return None
-
-def choose_third_party(df_third_party, df_third_party_ads):
-
-    entities = df_third_party_ads[df_third_party_ads['domain'].notnull()]['domain'].tolist()
-    if len(entities) > 0:
-        choose_third_party = Counter(entities).most_common()[0][0]
-        df_chosen_nodes = df_third_party[df_third_party['domain'] == choose_third_party]
-        return df_chosen_nodes
     else:
         return None
 

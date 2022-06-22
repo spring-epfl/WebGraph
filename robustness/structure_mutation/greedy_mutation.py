@@ -1,5 +1,8 @@
-from graph_builder import *
-from mutate_utils import *
+import graph as gs
+import labelling as ls
+from features.feature_extraction import extract_graph_features
+
+from utils import *
 from obfuscation import *
 from mutate_styles import *
 
@@ -66,7 +69,7 @@ def mutate_graph(df_graph_vid, G, df_nodes, third_party_node_names, original_tlu
 			df_chosen_node = df_nodes.sample().copy()
 			df_result, df_graph_vid_new, df_new_node = add_node(df_chosen_node, df_graph_vid, G, third_party_node_names, original_tlu,
 						ct, result_dir, run, visit_id, 
-						all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers, mapping_dict)
+						ldb, feature_config, clf, parsers, mapping_dict)
 			df_all_results = df_all_results.append(df_result)
 			folder_dict[df_result['folder_tag'].iloc[0]] = df_graph_vid_new.copy()
 			node_dict[df_result['folder_tag'].iloc[0]] = df_new_node
@@ -152,7 +155,7 @@ def mutate_graph(df_graph_vid, G, df_nodes, third_party_node_names, original_tlu
 	return G_mutate, df_graph_mut_new, df_new_node, chosen_type
 
 
-def run_pipeline(filepath_config):
+def pipeline(config):
 
 	"""
 	Function to run the pipeline for structure mutations. 
@@ -161,32 +164,8 @@ def run_pipeline(filepath_config):
 		filepath_config: Path to config file.
 	Returns:
 		None
-	"""
 
-	DB_PATH = filepath_config['content_ldb']
-	MODEL_FILE = filepath_config['model']
-	RESULT_DIR = filepath_config['result_dir']
-	PRED_FILE = filepath_config['pred_file']
-	GRAPH_DATA_FILE = filepath_config['graph_data']
-	VID_FILE = filepath_config['vid_file']
-	MUTATION_STYLE = filepath_config['mutation_style']
-	PARENT_LIMIT = 10
-
-	if not os.path.exists(RESULT_DIR):
-		os.mkdir(RESULT_DIR)
-	
-	with open(FEATURE_FILE) as f:
-		feature_config = load(f.read())
-
-	ldb = leveldb.LevelDB(ldb_file)
-
-	with open(VID_FILE) as f:
-		vid_list = json.loads(f.read())['vids']
-		vid_list = sorted(vid_list)
-
-	"""
-	We start the pipeline here. The pipeline consists of the following steps
-	for each site that we want to mutate.
+	The pipeline consists of the following steps for each site that we want to mutate.
 
 	1. Build the original graph and get the original predictions of WebGraph for it
 	   using a trained model.
@@ -204,15 +183,40 @@ def run_pipeline(filepath_config):
 	1. No sampling of nodes. 
 	"""
 
+	LDB_PATH = config['content_ldb']
+	MODEL_FILE = config['model']
+	RESULT_DIR = config['result_dir']
+	PRED_FILE = config['pred_file']
+	GRAPH_DATA_FILE = config['graph_data']
+	VID_FILE = config['vid_file']
+	MUTATION_STYLE = config['mutation_style']
+	FEATURE_FILE = config['feature_config']
+	PARENT_LIMIT = 10
+
+	if not os.path.exists(RESULT_DIR):
+		os.mkdir(RESULT_DIR)
+	
+	feature_config = load_config_info(FEATURE_FILE)
+	ldb = leveldb.LevelDB(LDB_PATH)
+
+	with open(VID_FILE) as f:
+		vid_list = json.loads(f.read())['vids']
+		vid_list = sorted(vid_list)
+
+	ls.download_lists(filterlist_dir, overwrite)
+    filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
+
 	for visit_id in vid_list:
 
 		try:
 			logger.info("START visit_id: " + str(visit_id))
-			RESULT_DIR_RUN = os.path.join(RESULT_DIR, "vid_" + str(visit_id))
-			if not os.path.exists(RESULT_DIR_RUN):
-				os.mkdir(RESULT_DIR_RUN)
 
-			#Load trained model
+			#Create a new directory for each visit ID
+			RESULT_DIR_VID = os.path.join(RESULT_DIR, "vid_" + str(visit_id))
+			if not os.path.exists(RESULT_DIR_VID):
+				os.mkdir(RESULT_DIR_VID)
+
+			#Load trained WebGraph model
 			clf = joblib.load(MODEL_FILE)
 
 			#Read graph for visit_id
@@ -220,17 +224,18 @@ def run_pipeline(filepath_config):
 			df_graph_vid = df_graph.copy()
 
 			#Build graph
-			G_original = build_original_graph(df_graph_vid)
+			G_original = gs.build_networkx_graph(df_graph_vid)
 			G_copy = G_original.copy()
 			logger.info("Built original graph")
-			num_iterations = int(len(G_copy.nodes()) * 0.2)
+			#We limit iterations to 20% of graph size
+			num_iterations = int(len(G_copy.nodes()) * 0.2) 
 				
 			beginning = time.time()
 
 			#Get original predictions
-			parsers = create_parsers_adgraph()
 			folder_tag = "original"
-			num_test = extract_and_classify(df_graph_vid, G_copy, RESULT_DIR_RUN, folder_tag, visit_id, ldb, feature_config, clf, parsers)
+			num_test = extract_and_classify(df_graph_vid, G_copy, RESULT_DIR_VID, 
+				folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
 			logger.info("Got original predictions")
 
 			#Read predictions and get adversary nodes
@@ -241,7 +246,7 @@ def run_pipeline(filepath_config):
 
 			if len(df_nodes) > 0:
 
-				df_original = read_pred(PRED_FILE)
+				df_original = read_prediction_df(PRED_FILE)
 				df_max_desired = pd.merge(df_original, df_nodes, how='inner', on=['visit_id', 'name'])
 				max_desired = len(df_max_desired[df_max_desired['pred'] == 'True'])
 
@@ -274,7 +279,8 @@ def run_pipeline(filepath_config):
 
 				#Classification and calculation to see how many nodes have to be switched
 				cm_folder_tag = str(ct) + "_content_mutated"
-				num_test = extract_and_classify(df_graph_mut, G_content_mut.copy(), RESULT_DIR_RUN, cm_folder_tag, visit_id, ldb, feature_config, clf)
+				num_test = extract_and_classify(df_graph_mut, G_content_mut.copy(), RESULT_DIR_RUN, 
+					cm_folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
 				new_dirname = os.path.join(RESULT_DIR_RUN, cm_folder_tag)
 				df_original = read_pred(os.path.join(RESULT_DIR_RUN, "original", "tp_0"))
 				df_new = read_pred(os.path.join(new_dirname, "tp_0"))
@@ -323,17 +329,27 @@ def run_pipeline(filepath_config):
 
 		except Exception as e:
 			logger.error(e)
-	
+
+
+def main(program: str, args: List[str]):
+    
+    parser = argparse.ArgumentParser(prog=program, description="Run the structural/flow mutation pipeline.")
+    
+    parser.add_argument(
+        "--config",
+        type=str,
+        help="Mutation config file.",
+        default=config.yaml
+    )
+
+    ns = parser.parse_args(args)
+    config = load_config_info(args)
+    pipeline(config)
+
+
 if __name__ == "__main__":
 
-	"""
-	This script runs the structure mutation code. 
-	Config for the script is in mutation_filepaths.yaml
-	"""
+    main(sys.argv[0], sys.argv[1:])
+	
 
-	filepath_file = "/home/ubuntu/code/mutation_filepaths.yaml"
-	with open(filepath_file) as f:
-		filepath_config = load(f.read())
-
-	run_pipeline(filepath_config)
 

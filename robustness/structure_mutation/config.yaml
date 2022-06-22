@@ -1,0 +1,17 @@
+#Sample config
+
+graph_data: graph.csv
+content_ldb: content.ldb
+feature_config: features.yaml
+vid_file: chosen_ids.json
+
+model:  model.joblib
+pred_file: predictions
+
+result_dir: results
+
+mutation_style:
+  - node_addition
+  - storage_removal
+  - redirect_removal
+  - url_obfuscation
