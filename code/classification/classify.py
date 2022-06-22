@@ -10,6 +10,20 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, precision_score, recall_score
 from treeinterpreter import treeinterpreter as ti
 
+def get_perc(num, den):
+
+    """
+    Helper function to get percentage value.
+
+    Args:
+        num: Numerator
+        den: Denominator
+    Returns:
+        Percentage, rounded to 2 decimal places.
+    """
+
+    return str(round(num/den * 100, 2)) + "%"
+
 def print_stats(report, result_dir, avg='macro avg', stats=['mean', 'std']):
 
     """
@@ -53,7 +67,7 @@ def report_feature_importance(feature_importances, result_dir):
 def report_true_pred(y_true, y_pred, name, vid, i, result_dir):
 
     """
-    Function to make truth/prediction output file.
+    Function to make truth/prediction output file, and confustion matrix file.
 
     Args:
         y_true: Truth values.
@@ -63,11 +77,7 @@ def report_true_pred(y_true, y_pred, name, vid, i, result_dir):
         i: Fold number.
         result_dir: Output directory.
     Returns:
-        Nothing, writes to a file.
-
-    This functions does the following:
-
-    1. Obtains the classification metrics for each fold.
+        Nothing, writes to files.
     """
 
     fname = os.path.join(result_dir, "tp_%s" % str(i))
@@ -82,7 +92,7 @@ def report_true_pred(y_true, y_pred, name, vid, i, result_dir):
 def describe_classif_reports(results, result_dir):
 
     """
-    Function to make classification stats report.
+    Function to make classification stats report over all folds.
 
     Args:
         results: Results of classification
@@ -110,6 +120,20 @@ def describe_classif_reports(results, result_dir):
 
 def log_pred_probability(df_feature_test, y_pred, test_mani, clf, result_dir, tag):
 
+    """
+    Function to log prediction probabilities.
+
+    Args:
+        df_feature_test: Test feature DataFrame.
+        y_pred: Test predictions. 
+        test_mani: Test feature and labels DataFrame.
+        clf: Trained model
+        result_dir: Output folder of results.
+        tag: Fold number.
+    Returns:
+        Nothing, writes to file.
+    """
+
     y_pred_prob = clf.predict_proba(df_feature_test)
     fname = os.path.join(result_dir, "predict_prob_" + str(tag))
 
@@ -127,6 +151,19 @@ def log_pred_probability(df_feature_test, y_pred, test_mani, clf, result_dir, ta
             f.write(truth_labels[i] + " |$| " + pred_labels[i] + " |$| " + preds +  " |$| " + truth_names[i] + " |$| " + truth_vids[i] +"\n")
 
 def log_interpretation(df_feature_test, clf, result_dir, tag, cols):
+
+    """
+    Function to perform interpretation of test results.
+
+    Args:
+        df_feature_test: Test DataFrame.
+        clf: Trained model
+        result_dir: Output folder of results.
+        tag: Fold number.
+        cols: Feature column names.
+    Returns:
+        Nothing, writes to file.
+    """
 
     preds, bias, contributions = ti.predict(clf, df_feature_test)
     fname = os.path.join(result_dir, "interpretation_" + str(tag))
@@ -149,6 +186,24 @@ def log_interpretation(df_feature_test, clf, result_dir, tag, cols):
 
 
 def classify(train, test, result_dir, tag, save_model, pred_probability, interpret):
+
+    """
+    Function to perform classification.
+
+    Args:
+        train: Train data.
+        test: Test data.
+        result_dir: Output folder for results.
+        tag: Fold number.
+        save_model: Boolean value indicating whether to save the trained model or not.
+        pred_probability: Boolean value indicating whether to save the prediction probabilities or not.
+        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.    
+    Returns:
+        list(test_mani.label): Truth labels of test data.
+        list(y_pred): Predicted labels of test data.
+        list(test_mani.name): URLs of test data.
+        list(test_mani.visit_id): Visit IDs of test data.
+    """
 
     train_mani = train.copy()
     test_mani = test.copy()
@@ -200,6 +255,19 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
 
 def classify_crossval(df_labelled, result_dir, save_model, pred_probability, interpret):
 
+    """
+    Function to perform cross validation.
+
+    Args:
+        df_labelled; DataFrame of features and labels.
+        result_dir: Output folder for results.
+        save_model: Boolean value indicating whether to save the trained model or not.
+        pred_probability: Boolean value indicating whether to save the prediction probabilities or not.
+        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.    
+    Returns:
+        results: List of results for each fold.
+    """
+
     vid_list = df_labelled['visit_id'].unique()
     num_iter = 10
     num_test_vid = int(len(vid_list)/num_iter)
@@ -233,27 +301,20 @@ def classify_crossval(df_labelled, result_dir, save_model, pred_probability, int
 
     return results
 
-def get_perc(num, den):
-
-    return str(round(num/den * 100, 2)) + "%"
-
-
 def pipeline(feature_file, label_file, result_dir, save_model, pred_probability, interpret):
 
     """
-    Function to run data labelling pipeline.
+    Function to run classification pipeline.
 
     Args:
-      config_filename: Path of the YAML file with feature and output file paths
+      feature_file: CSV file of features from feature extraction process.
+      label_file: CSV file of labels from labelling process.
+      result_dir: Output folder for results.
+      save_model: Boolean value indicating whether to save the trained model or not.
+      pred_probability: Boolean value indicating whether to save the prediction probabilities or not.
+      interpret: Boolean value indicating whether to use tree interpreter on predictions or not.
     Returns:
       Nothing, creates a result directory with all the results.
-
-    This functions does the following:
-
-    1. Reads input files.
-    2. Creates DataFrame out of labelled data.
-    3. Performs training/classification.
-    4. Write results to specified output files.
     """
 
     df_features = pd.read_csv(feature_file)
