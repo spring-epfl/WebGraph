@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import json
+import pandas as pd
 
 import requests
 from adblockparser import AdblockRules
@@ -237,3 +238,15 @@ def label_nodes(df, filterlists, filterlist_rules):
     df_nodes = df_nodes[['visit_id', 'name', 'top_level_url', 'label']]
 
     return df_nodes
+
+
+def label_data(df, filterlists, filterlist_rules):
+    df_labelled = pd.DataFrame()
+
+    try:
+        df_nodes = df[df['graph_attr'] == "Node"]
+        df_labelled = label_nodes(df_nodes, filterlists, filterlist_rules)
+    except Exception as e:
+        print("Error labelling:", e)
+
+    return df_labelled
