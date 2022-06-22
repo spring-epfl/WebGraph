@@ -106,4 +106,9 @@ feature_columns:
       - indirect_all_average_degree_connectivity
       - indirect_all_eccentricity
 
+label_columns:
+      - visit_id
+      - top_level_url
+      - name
+      - label
  

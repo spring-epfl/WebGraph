@@ -115,12 +115,13 @@ def label_node_data(row, filterlists, filterlist_rules):
         data_label = False
 
         for fl in filterlists:
-            if top_domain and setter_domain:
+            if top_domain and domain:
                 list_label = match_url(top_domain, domain, url, resource_type, filterlist_rules[fl])
                 data_label = data_label | list_label
             else:
                 data_label = "Error"
-    except:
+    except Exception as e:
+        print('Error in node labelling:', e)
         data_label = "Error"
 
     return data_label
@@ -142,6 +143,7 @@ def label_nodes(df, filterlists, filterlist_rules):
     df_nodes = df[(df['type'] != 'Storage') & (df['type'] != 'Element')].copy()
     df_nodes['resource_type'] = df_nodes['attr'].apply(get_resource_type)
     df_nodes['label'] = df_nodes.apply(label_node_data, filterlists=filterlists, filterlist_rules=filterlist_rules, axis=1)
+    df_nodes = df_nodes[['visit_id', 'name', 'top_level_url', 'label']]
 
     return df_nodes
 
