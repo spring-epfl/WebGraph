@@ -3,6 +3,8 @@ from sklearn import preprocessing
 import re
 import json
 
+from logger import LOGGER
+
 def get_url_features(url, node_dict):
 
   """
@@ -20,7 +22,7 @@ def get_url_features(url, node_dict):
                  "promo","tag", "zoneid", "siteid", "pageid", "size", "viewid", "zone_id", "google_afc" , "google_afs"]
   keyword_char = [".", "/", "&", "=", ";", "-", "_", "/", "*", "^", "?", ";", "|", ","]
   screen_resolution = ["screenheight", "screenwidth", "browserheight", "browserwidth", "screendensity", "screen_res", "screen_param", "screenresolution", "browsertimeoffset"]
-  
+
   try:
     parsed_url = urlparse(url)
     query = parsed_url.query
@@ -28,7 +30,7 @@ def get_url_features(url, node_dict):
     is_valid_qs = 1
     base_domain = node_dict['domain']
     top_level_domain = node_dict['top_level_domain']
-  
+
   except:
     top_level_domain = ""
     base_domain = ""
@@ -118,7 +120,7 @@ def get_node_features(node_name, node_dict, le):
   is_subdomain = 0
   url_length = 0
   node_type = ""
-  
+
   try:
 
     url_length = len(node_name)
@@ -133,19 +135,19 @@ def get_node_features(node_name, node_dict, le):
       if domain == top_level_domain:
         is_subdomain = 1
     node_features = [node_type, content_policy_type, url_length, is_subdomain]
-    
+
   except Exception as e:
-    print('Error node features:', e)
+    LOGGER.warning('Error node features:', exc_info=True)
     node_features = [node_type, content_policy_type, url_length, is_subdomain]
 
   node_feature_names = ['node_type', 'content_policy_type', 'url_length', 'is_subdomain']
-  
+
   return node_features, node_feature_names
 
 def get_content_features(G, df_graph, node):
 
   """
-  Function to extract content features. This function calls 
+  Function to extract content features. This function calls
   the other functions to extract different types of content features.
 
   Args:
@@ -163,9 +165,8 @@ def get_content_features(G, df_graph, node):
   all_features = []
   all_feature_names = []
   node_features, node_feature_names = get_node_features(node, G.nodes[node], le)
-  url_features, url_feature_names = get_url_features(node, G.nodes[node]) 
+  url_features, url_feature_names = get_url_features(node, G.nodes[node])
   all_features = node_features + url_features
   all_feature_names = node_feature_names + url_feature_names
 
   return all_features, all_feature_names
-  

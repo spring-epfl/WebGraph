@@ -13,6 +13,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, precision_score, recall_score
 from treeinterpreter import treeinterpreter as ti
 
+from logger import LOGGER
+
+
 def get_perc(num, den):
 
     """
@@ -128,7 +131,7 @@ def log_pred_probability(df_feature_test, y_pred, test_mani, clf, result_dir, ta
 
     Args:
         df_feature_test: Test feature DataFrame.
-        y_pred: Test predictions. 
+        y_pred: Test predictions.
         test_mani: Test feature and labels DataFrame.
         clf: Trained model
         result_dir: Output folder of results.
@@ -222,7 +225,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
         tag: Fold number.
         save_model: Boolean value indicating whether to save the trained model or not.
         pred_probability: Boolean value indicating whether to save the prediction probabilities or not.
-        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.    
+        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.
     Returns:
         list(test_mani.label): Truth labels of test data.
         list(y_pred): Predicted labels of test data.
@@ -240,7 +243,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
     columns = df_feature_train.columns
     df_feature_train = df_feature_train.to_numpy()
     train_labels = train_mani.label.to_numpy()
-    
+
     # Perform training
     clf.fit(df_feature_train, train_labels)
 
@@ -252,7 +255,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
     cols = df_feature_test.columns
     df_feature_test = df_feature_test.to_numpy()
     y_pred = clf.predict(df_feature_test)
-    
+
     acc = accuracy_score(test_mani.label, y_pred)
     prec = precision_score(test_mani.label, y_pred, pos_label=True)
     rec = recall_score(test_mani.label, y_pred, pos_label=True)
@@ -264,7 +267,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
         f.write("Precision score: " + str(round(prec*100, 3)) + "%" + "\n")
         f.write("Recall score: " + str(round(rec*100, 3)) + "%" +  "\n")
 
-    print("Accuracy Score:", acc)
+    LOGGER.info("Accuracy Score:", acc)
 
     # Save trained model if save_model is True
     if save_model:
@@ -288,7 +291,7 @@ def classify_crossval(df_labelled, result_dir, save_model, pred_probability, int
         result_dir: Output folder for results.
         save_model: Boolean value indicating whether to save the trained model or not.
         pred_probability: Boolean value indicating whether to save the prediction probabilities or not.
-        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.    
+        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.
     Returns:
         results: List of results for each fold.
     """
@@ -299,11 +302,11 @@ def classify_crossval(df_labelled, result_dir, save_model, pred_probability, int
     used_test_ids = []
     results = []
 
-    print("Total Number of visit IDs:", len(vid_list))
-    print("Number of visit IDs to use in a fold:", num_test_vid)
+    LOGGER.info("Total Number of visit IDs: %d", len(vid_list))
+    LOGGER.info("Number of visit IDs to use in a fold: %d", num_test_vid)
 
     for i in range(0, num_iter):
-        print("Performing fold:", i)
+        LOGGER.info("Performing fold: %d", i)
         vid_list_iter = list(set(vid_list) - set(used_test_ids))
         chosen_test_vid = random.sample(vid_list_iter, num_test_vid)
         used_test_ids += chosen_test_vid
@@ -354,9 +357,9 @@ def pipeline(feature_file, label_file, result_dir, save_model, pred_probability,
     report = describe_classif_reports(results, result_dir)
 
 def main(program: str, args: List[str]):
-    
+
     parser = argparse.ArgumentParser(prog=program, description="Run the WebGraph classification pipeline.")
-    
+
     parser.add_argument(
         "--features",
         type=str,
