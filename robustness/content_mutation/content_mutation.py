@@ -28,7 +28,6 @@ def perform_mutations(df, tracker_dict, output_fname, map_dir, change_third_part
 	try:
 		visit_id = df.iloc[0]['visit_id']
 		if visit_id in tracker_dict:
-			print("HERE")
 			tracker_list = tracker_dict[visit_id]
 
 			df_trackers = df[df['name'].isin(tracker_list)]

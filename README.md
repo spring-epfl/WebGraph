@@ -31,22 +31,18 @@ pip install -r requirements.txt
 
 #### Preparing Crawl Data
 
-To generate the crawl data needed for the pipeline, you need to run a crawl using the installed OpenWPM tool. In this repo we provide a [demo-crawl.py ](link/to/demo/file) ##MUST ADD DEMO## to run a sample query. 
-
-```bash
-python <project-directory>/demo/demo-crawl.py 
-```
+To generate the crawl data needed for the pipeline, you need to run a crawl using the installed OpenWPM tool. 
 
 After you run the demo, a `datadir` folder will be created in your `demo` directory. Inside the folder, you will find two database files to be used in our pipeline: `crawl-db.sqlite` and `content.ldb`
 
 ### Pipeline
 
-with WebGraph, we mainly present 3 tasks that you can run:
+with WebGraph, we mainly present two tasks that you can run:
 
-1. Graph Preprocessing
+1. Graph Preprocessing and Feature building
 2. Classification (training and testing)
 
-#### 1. Graph preprocessing
+#### 1. Graph preprocessing and Feature Building
 
 In this task, WebGraph constructs the dataset for classification by:
 
@@ -70,7 +66,19 @@ python <project-directory>/code/run.py --input-db <location-to-datadir>/datadir/
 
 #### 2. Classification
 
-##TODO##
+The classification takes in the output from Step 1 (features and labels), and performs cross validation on the data. To run this task, run the following script:
+
+```
+python <project-directory>/code/classification/classify.py --input-db <location-to-datadir>/datadir/crawl-db.sqlite --ldb <location-to-datadir>/datadir/content.ldb
+```
+> Arguments of this command:
+>
+> - `--features`: the path to the features.csv file
+> - `--labels`: the path to the labels.csv file
+> - `--out`: the path to the directory of the output files
+> - `--save`: Whether to save the trained model.
+> - `--probability`: Whether to save prediction probabilities.
+>- `--interpret`: Whether to run interpretation on results.
 
 <hr/>
 
@@ -85,24 +93,24 @@ These are the columns present in the graph output under `graph.csv`
 | *visit_id*           | All        | the visit id of the crawl                                    |
 | *name*               | All        | the name of the node or edge                                 |
 | *graph_attr*         | All        | `Node` or `Edge`                                             |
-| *top_level_url*      | All        | -                                                            |
+| *top_level_url*      | All        | The top level URL (page being visited)                                                   |
 | *attr*               | All        | additional attributes of nodes and edges                     |
 | *domain*             | All        | The parent domain of nodes or edges                          |
-| *top_level_domain*   | All        | -                                                            |
+| *top_level_domain*   | All        | Top level domain (domain of page being visited)                                                            |
 | *type*               | Node       | The type of node `Document | Element | Request | Script | Storage` |
-| *document_url*       | Node       | -                                                            |
-| *setter*             | Node       | The name of the node that set storage nodes                  |
-| *setting_time_stamp* | Node       | -                                                            |
-| *setter_domain*      | Node       | -                                                            |
-| *party*              | Node       | the partyness of a node either `first` or `third` or `N/A`   |
-| *src*                | Edge       | the source node name of the edge                             |
-| *dst*                | Edge       | the destination node name of the edge                        |
-| *reqattr*            | Edge       | http request attributes                                      |
-| *respattr*           | Edge       | http response attributes                                     |
-| *response_status*    | Edge       | http response status                                         |
-| *content_hash*       | Edge       | -                                                            |
-| *post_body*          | Edge       | -                                                            |
-| *post_body_raw*      | Edge       | -                                                            |
+| *document_url*       | Node       | Context of a script's execution.                                                            |
+| *setter*             | Node       | The name of the node that sets a storage node.                  |
+| *setting_time_stamp* | Node       | Time stamp of storage node setting.                                                           |
+| *setter_domain*      | Node       | Domain of the node that sets a storage node.                                                           |
+| *party*              | Node       | The partiness of a node either `first` or `third` or `N/A`   |
+| *src*                | Edge       | The source node name of the edge                             |
+| *dst*                | Edge       | The destination node name of the edge                        |
+| *reqattr*            | Edge       | HTTP request headers                                      |
+| *respattr*           | Edge       | HTTP response headers                                     |
+| *response_status*    | Edge       | HTTP response status                                         |
+| *content_hash*       | Edge       | Content hash if logged by OpenWPM                                                           |
+| *post_body*          | Edge       | POST response body hash                                                           |
+| *post_body_raw*      | Edge       | POST response body raw                                                           |
 
 #### Features
 
@@ -110,7 +118,7 @@ The features in `features.csv` used are described in [features.yaml](https://git
 
 #### Labels
 
-Nodes labeled by either 0 or 1 if they are blocked or not
+Nodes labeled by either True or False if they are blocked by filter lists or not.
 
 <hr/>
 
@@ -144,4 +152,5 @@ If you use the code/data in your research, please cite our work as follows:
 ### Contact
 
 In case of questions, please get in touch with [Sandra Siby](https://sandrasiby.github.io/). 
+
 

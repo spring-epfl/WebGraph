@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, precision_score, recall_score
 from treeinterpreter import treeinterpreter as ti
 
-from logger import LOGGER
+#from logger import LOGGER
 
 
 def get_perc(num, den):
@@ -267,8 +267,6 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
         f.write("Precision score: " + str(round(prec*100, 3)) + "%" + "\n")
         f.write("Recall score: " + str(round(rec*100, 3)) + "%" +  "\n")
 
-    LOGGER.info("Accuracy Score:", acc)
-
     # Save trained model if save_model is True
     if save_model:
         model_fname = os.path.join(result_dir, "model_" + str(tag) + ".joblib")
@@ -302,11 +300,11 @@ def classify_crossval(df_labelled, result_dir, save_model, pred_probability, int
     used_test_ids = []
     results = []
 
-    LOGGER.info("Total Number of visit IDs: %d", len(vid_list))
-    LOGGER.info("Number of visit IDs to use in a fold: %d", num_test_vid)
+    #LOGGER.info("Total Number of visit IDs: %d", len(vid_list))
+    #LOGGER.info("Number of visit IDs to use in a fold: %d", num_test_vid)
 
     for i in range(0, num_iter):
-        LOGGER.info("Performing fold: %d", i)
+        #LOGGER.info("Performing fold: %d", i)
         vid_list_iter = list(set(vid_list) - set(used_test_ids))
         chosen_test_vid = random.sample(vid_list_iter, num_test_vid)
         used_test_ids += chosen_test_vid
@@ -345,8 +343,8 @@ def pipeline(feature_file, label_file, result_dir, save_model, pred_probability,
       Nothing, creates a result directory with all the results.
     """
 
-    df_features = pd.read_csv(feature_file, index_col=0)
-    df_labels = pd.read_csv(label_file, index_col=0)
+    df_features = pd.read_csv(feature_file)
+    df_labels = pd.read_csv(label_file)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
 
