@@ -69,7 +69,7 @@ python <project-directory>/code/run.py --input-db <location-to-datadir>/datadir/
 The classification takes in the output from Step 1 (features and labels), and performs cross validation on the data. To run this task, run the following script:
 
 ```
-python <project-directory>/code/classification/classify.py --input-db <location-to-datadir>/datadir/crawl-db.sqlite --ldb <location-to-datadir>/datadir/content.ldb
+python <project-directory>/code/classification/classify.py --features features.csv --labels labels.csv --out results --save False --probability False --interpret False
 ```
 > Arguments of this command:
 >
