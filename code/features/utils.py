@@ -13,6 +13,8 @@ import graph as gs
 import base64
 import hashlib
 
+from logger import LOGGER
+
 def has_ad_keyword(node, G):
 
   """
@@ -93,13 +95,13 @@ def find_modified_storage(df_target):
   df_copy = df_copy.reset_index()
   set_node = df_copy.iloc[[0]][['src','dst']]
   modify_nodes = df_copy.drop([0], axis=0)[['src','dst']]
-  
+
   if len(modify_nodes) > 0:
     df_merged = pd.merge(set_node, modify_nodes, on='dst')
     df_modedges = df_merged[['src_x', 'src_y', 'dst']].drop_duplicates()
     df_modedges.columns = ['src', 'dst', 'attr']
     df_modedges = df_modedges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
-  
+
   return df_modedges
 
 def get_cookieval(attr):
@@ -158,7 +160,9 @@ def get_redirect_depths(df_graph):
   try:
 
     http_status = [300, 301, 302, 303, 307, 308]
+    http_status = http_status + [str(x) for x in http_status]
     df_redirect = df_graph[df_graph['response_status'].isin(http_status)]
+
     G_red = gs.build_networkx_graph(df_redirect)
 
     for n in G_red.nodes():
@@ -183,7 +187,6 @@ def get_redirect_depths(df_graph):
     return dict_redirect
 
   except Exception as e:
-    print("Error in redirect:", e)
     return dict_redirect
 
 def find_urls(df):
@@ -209,7 +212,7 @@ def check_full_cookie(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a cookie value exists in a URL.
   """
@@ -223,14 +226,14 @@ def check_partial_cookie(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a partial cookie value exists in a URL.
   """
 
   for value in cookie_value:
       split_cookie = re.split(r'\.+|;+|]+|\!+|\@+|\#+|\$+|\%+|\^+|\&+|\*+|\(+|\)+|\-+|\_+|\++|\~+|\`+|\@+=|\{+|\}+|\[+|\]+|\\+|\|+|\:+|\"+|\'+|\<+|\>+|\,+|\?+|\/+', value)
-      return True if len([item for item in split_cookie if item in dest and len(item) > 3]) > 0 else False  
+      return True if len([item for item in split_cookie if item in dest and len(item) > 3]) > 0 else False
   return False
 
 def check_base64_cookie(cookie_value, dest):
@@ -240,7 +243,7 @@ def check_base64_cookie(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a base64 encoded cookie value exists in a URL.
   """
@@ -255,7 +258,7 @@ def check_md5_cookie(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a MD5 hashed cookie value exists in a URL.
   """
@@ -270,7 +273,7 @@ def check_sha1_cookie(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a SHA1 hashed cookie value exists in a URL.
   """
@@ -284,7 +287,7 @@ def check_full_cookie_set(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a cookie value exists in a URL.
   """
@@ -301,7 +304,7 @@ def check_partial_cookie_set(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a partial cookie value exists in a URL.
   """
@@ -320,7 +323,7 @@ def check_base64_cookie_set(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a base64 encoded cookie value exists in a URL.
   """
@@ -337,7 +340,7 @@ def check_md5_cookie_set(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a MD5 hashed cookie value exists in a URL.
   """
@@ -354,7 +357,7 @@ def check_sha1_cookie_set(cookie_value, dest):
 
   Args:
     cookie_value: Cookie value
-    dest: URL 
+    dest: URL
   Returns:
     Binary value showing whether a SHA1 hashed cookie value exists in a URL.
   """
@@ -398,7 +401,7 @@ def find_indirect_edges(G, df_graph):
     G: networkX graph
     df_graph: DataFrame representation of graph
   Returns:
-    df_edges: DataFrame representation of shared information edges. 
+    df_edges: DataFrame representation of shared information edges.
   """
 
   df_edges = pd.DataFrame()
@@ -420,8 +423,7 @@ def find_indirect_edges(G, df_graph):
       df_get_edges['cookie'] = df_get_edges['attr']
       df_get_edges = df_get_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
       df_get_edges['type'] = 'set_get'
-      df_edges = df_edges.append(df_get_edges, ignore_index=True)
-
+      df_edges = pd.concat([df_edges, df_get_edges], ignore_index=True)
 
     #Nodes that set to nodes that modify
     all_storage_set = df_graph[(df_graph['action'] == 'set') | \
@@ -430,8 +432,7 @@ def find_indirect_edges(G, df_graph):
     df_modified_edges = all_storage_set.groupby('dst').apply(find_modified_storage)
     if len(df_modified_edges) > 0:
       df_modified_edges['type'] = 'set_modify'
-      df_edges = df_edges.append(df_modified_edges, ignore_index=True)
-
+      df_edges = pd.concat([df_edges, df_modified_edges], ignore_index=True)
 
     #Nodes that set to URLs with cookie value
     df_set_url_edges = pd.DataFrame()
@@ -439,7 +440,7 @@ def find_indirect_edges(G, df_graph):
                   (df_graph['action'] == 'set_js')].copy()
     df_cookie_set['cookie_val'] = df_cookie_set['attr'].apply(get_cookieval)
     cookie_values = list(set(df_cookie_set[~df_cookie_set['cookie_val'].isnull()]['cookie_val'].tolist()))
-    
+
     df_nodes = df_graph[(df_graph['graph_attr'] == 'Node') & \
                         ((df_graph['type'] == 'Request') | \
                         (df_graph['type'] == 'Script') | \
@@ -459,12 +460,12 @@ def find_indirect_edges(G, df_graph):
           src = df_cookie_set[df_cookie_set['cookie_val'] == cookie_value]['src'].iloc[0]
           dst = dest
           attr = 1
-          df_set_url_edges = df_set_url_edges.append({'src' : src, 'dst' : dst, 'attr': attr}, ignore_index=True)
+          df_set_url_edges = pd.concat([df_set_url_edges, pd.DataFrame.from_records([{'src' : src, 'dst' : dst, 'attr': attr}])], ignore_index=True)
 
     if len(df_set_url_edges) > 0:
       df_set_url_edges = df_set_url_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
       df_set_url_edges['type'] = 'set_url'
-      df_edges = df_edges.append(df_set_url_edges, ignore_index=True)
+      df_edges = pd.concat([df_edges, df_set_url_edges], ignore_index=True)
 
     #Nodes that get to URLs with cookie value
     df_http_requests = df_graph[(df_graph['reqattr'] != 'CS') & (df_graph['src'] != 'N/A') & (df_graph['action'] != 'CS') & (df_graph['graph_attr'] != 'EdgeWG')]
@@ -472,7 +473,6 @@ def find_indirect_edges(G, df_graph):
     df_http_requests_merge = df_http_requests_merge[df_http_requests_merge['reqattr_x'].notnull()]
 
     if len(df_http_requests_merge):
-      
       df_http_requests_merge['cookie_presence'] = df_http_requests_merge.apply(
         axis=1,
         func=lambda x: check_cookie_presence(x['reqattr_x'], x['dst_y'])
@@ -483,10 +483,10 @@ def find_indirect_edges(G, df_graph):
         df_get_url_edges.columns = ['src', 'dst', 'attr']
         df_get_url_edges = df_get_url_edges.groupby(['src', 'dst'])['attr'].apply(len).reset_index()
         df_get_url_edges['type'] = 'get_url'
-        df_edges = df_edges.append(df_get_url_edges, ignore_index=True)
+        df_edges = pd.concat([df_edges, df_get_url_edges], ignore_index=True)
 
   except Exception as e:
-    traceback.print_exc()
+    LOGGER.exception("An error occurred when extracting shared information edges.")
     return df_edges
 
   return df_edges

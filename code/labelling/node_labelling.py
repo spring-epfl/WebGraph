@@ -5,7 +5,7 @@ def get_resource_type(attr):
 
     """
     Function to get resource type of a node.
-    
+
     Args:
         attr: Node attributes.
     Returns:
@@ -16,15 +16,14 @@ def get_resource_type(attr):
         attr = json.loads(attr)
         return attr['content_policy_type']
     except Exception as e:
-        print("error in type", e)
         return None
 
-
+      
 def match_url(domain_top_level, current_domain, current_url, resource_type, rules_dict):
 
     """
     Function to match node information with filter list rules.
-    
+
     Args:
         domain_top_level: eTLD+1 of visited page.
         current_domain; Domain of request being labelled.
@@ -89,16 +88,13 @@ def match_url(domain_top_level, current_domain, current_url, resource_type, rule
         return rules.should_block(current_url, options)
 
     except Exception as e:
-        print('Exception encountered', e)
-        print('top url', domain_top_level)
-        print('current url', current_domain)
         return False
 
 def label_node_data(row, filterlists, filterlist_rules):
 
     """
-    Function to label a node with filter lists. 
-    
+    Function to label a node with filter lists.
+
     Args:
         row: Row of node DataFrame.
         filterlists: List of filter list names.
@@ -120,8 +116,8 @@ def label_node_data(row, filterlists, filterlist_rules):
                 data_label = data_label | list_label
             else:
                 data_label = "Error"
-    except Exception as e:
-        print('Error in node labelling:', e)
+    except Exception:
+        LOGGER.warning('Error in node labelling:', exc_info=True)
         data_label = "Error"
 
     return data_label
@@ -130,8 +126,8 @@ def label_node_data(row, filterlists, filterlist_rules):
 def label_nodes(df, filterlists, filterlist_rules):
 
     """
-    Function to label nodes with filter lists. 
-    
+    Function to label nodes with filter lists.
+
     Args:
         df: DataFrame of nodes.
         filterlists: List of filter list names.
@@ -155,6 +151,6 @@ def label_data(df, filterlists, filterlist_rules):
         df_nodes = df[df['graph_attr'] == "Node"]
         df_labelled = label_nodes(df_nodes, filterlists, filterlist_rules)
     except Exception as e:
-        print("Error labelling:", e)
+        LOGGER.warning("Error labelling:", exc_info=True)
 
     return df_labelled

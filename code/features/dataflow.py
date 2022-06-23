@@ -2,6 +2,9 @@ import pandas as pd
 import networkx as nx
 from .utils import *
 
+from logger import LOGGER
+
+
 def get_storage_features(df_graph, node):
 
   """
@@ -52,7 +55,7 @@ def get_redirect_features(df_graph, node, dict_redirect):
   """
 
   http_status = [300, 301, 302, 303, 307, 308]
-  #http_status = [str(x) for x in http_status]
+  http_status = http_status + [str(x) for x in http_status]
 
   redirects_sent = df_graph[(df_graph['src'] == node) & (df_graph['response_status'].isin(http_status))]
   redirects_rec = df_graph[(df_graph['dst'] == node) & (df_graph['response_status'].isin(http_status))]
@@ -82,7 +85,7 @@ def get_request_flow_features(G, df_graph, node):
     rf_feature_names: request flow feature names
   """
 
-  requests_sent = df_graph[(df_graph['src'] == node) & (df_graph['reqattr'].notnull()) & (df_graph['reqattr'] != "CS") & (df_graph['reqattr'] != "N/A")] 
+  requests_sent = df_graph[(df_graph['src'] == node) & (df_graph['reqattr'].notnull()) & (df_graph['reqattr'] != "CS") & (df_graph['reqattr'] != "N/A")]
   requests_received = df_graph[(df_graph['dst'] == node) & (df_graph['reqattr'].notnull()) & (df_graph['reqattr'] != "CS") & (df_graph['reqattr'] != "N/A")]
   num_requests_sent = len(requests_sent)
   num_requests_received = len(requests_received)
@@ -176,7 +179,7 @@ def get_indirect_features(G, df_graph, node):
         min_out_weights = min(out_weights)
         max_out_weights = max(out_weights)
   except Exception as e:
-    print("[ get_indirect_features ] : ERROR - ", e)
+    LOGGER.warning("[ get_indirect_features ] : ERROR - ", exc_info=True)
 
   indirect_features = [in_degree, out_degree, ancestors, descendants, closeness_centrality, \
                       average_degree_connectivity, eccentricity, mean_in_weights, \
@@ -229,7 +232,7 @@ def get_indirect_all_features(G, node):
       except Exception as e:
         eccentricity = -1
   except Exception as e:
-    print("[ get_indirect_all_features ] : ERROR - ", e)
+    LOGGER.warning("[ get_indirect_all_features ] : ERROR - ", exc_info=True)
 
   indirect_all_features = [in_degree, out_degree, ancestors, descendants, \
       closeness_centrality, average_degree_connectivity, eccentricity]
@@ -244,7 +247,7 @@ def get_indirect_all_features(G, node):
 def get_dataflow_features(G, df_graph, node, dict_redirect, G_indirect, G_indirect_all, df_indirect_graph):
 
   """
-  Function to extract dataflow features. This function calls 
+  Function to extract dataflow features. This function calls
   the other functions to extract different types of dataflow features.
 
   Args:
@@ -297,6 +300,6 @@ def pre_extraction(G, df_graph):
   if len(df_indirect_edges) > 0:
      G_indirect = nx.from_pandas_edgelist(df_indirect_edges, source='src', target='dst', edge_attr=True, create_using=nx.DiGraph())
   G_indirect_all = nx.compose(G, G_indirect)
-  
+
   return dict_redirect, G_indirect, G_indirect_all, df_indirect_edges
 

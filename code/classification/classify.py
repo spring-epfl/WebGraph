@@ -1,14 +1,20 @@
 import argparse
+import sys
 import os
 import random
 import collections
 import joblib
-
+from typing import List
+import json
 import numpy as np
 import pandas as pd
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, precision_score, recall_score
 from treeinterpreter import treeinterpreter as ti
+
+from logger import LOGGER
+
 
 def get_perc(num, den):
 
@@ -87,7 +93,7 @@ def report_true_pred(y_true, y_pred, name, vid, i, result_dir):
 
     fname = os.path.join(result_dir, "confusion_matrix")
     with open(fname, "a") as f:
-        f.write(np.array_str(confusion_matrix(y_true, y_pred, labels=["Positive", "Negative"])) + "\n\n")
+        f.write(np.array_str(confusion_matrix(y_true, y_pred, labels=[True, False])) + "\n\n")
 
 def describe_classif_reports(results, result_dir):
 
@@ -125,7 +131,7 @@ def log_pred_probability(df_feature_test, y_pred, test_mani, clf, result_dir, ta
 
     Args:
         df_feature_test: Test feature DataFrame.
-        y_pred: Test predictions. 
+        y_pred: Test predictions.
         test_mani: Test feature and labels DataFrame.
         clf: Trained model
         result_dir: Output folder of results.
@@ -150,7 +156,7 @@ def log_pred_probability(df_feature_test, y_pred, test_mani, clf, result_dir, ta
             preds = ' |$| '.join(preds)
             f.write(truth_labels[i] + " |$| " + pred_labels[i] + " |$| " + preds +  " |$| " + truth_names[i] + " |$| " + truth_vids[i] +"\n")
 
-def log_interpretation(df_feature_test, clf, result_dir, tag, cols):
+def log_interpretation(df_feature_test, test_mani, clf, result_dir, tag, cols):
 
     """
     Function to perform interpretation of test results.
@@ -185,6 +191,28 @@ def log_interpretation(df_feature_test, clf, result_dir, tag, cols):
         f.write(json.dumps(data_dict, indent=4))
 
 
+def classify_with_model(clf, test, result_dir, feature_list):
+
+    test_mani = test.copy()
+    fields_to_remove = ['visit_id', 'name', 'label']
+    df_feature_test = test_mani.drop(fields_to_remove, axis=1)
+    df_feature_test = df_feature_test.to_numpy()
+    #df_feature_test = df_feature_test[feature_list]
+
+    y_pred = clf.predict(df_feature_test)
+    
+    acc = accuracy_score(test_mani.label, y_pred)
+    prec = precision_score(test_mani.label, y_pred, pos_label=True)
+    rec = recall_score(test_mani.label, y_pred, pos_label=True)
+
+    fname = os.path.join(result_dir, "accuracy")
+    with open(fname, "a") as f:
+        f.write("\nAccuracy score: " + str(round(acc*100, 3)) + "%" + "\n")
+        f.write("Precision score: " + str(round(prec*100, 3)) + "%" + "\n")
+        f.write("Recall score: " + str(round(rec*100, 3)) + "%" +  "\n")
+
+    return list(test_mani.label), list(y_pred), list(test_mani.name), list(test_mani.visit_id)
+
 def classify(train, test, result_dir, tag, save_model, pred_probability, interpret):
 
     """
@@ -197,7 +225,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
         tag: Fold number.
         save_model: Boolean value indicating whether to save the trained model or not.
         pred_probability: Boolean value indicating whether to save the prediction probabilities or not.
-        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.    
+        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.
     Returns:
         list(test_mani.label): Truth labels of test data.
         list(y_pred): Predicted labels of test data.
@@ -215,7 +243,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
     columns = df_feature_train.columns
     df_feature_train = df_feature_train.to_numpy()
     train_labels = train_mani.label.to_numpy()
-    
+
     # Perform training
     clf.fit(df_feature_train, train_labels)
 
@@ -227,10 +255,10 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
     cols = df_feature_test.columns
     df_feature_test = df_feature_test.to_numpy()
     y_pred = clf.predict(df_feature_test)
-    
+
     acc = accuracy_score(test_mani.label, y_pred)
-    prec = precision_score(test_mani.label, y_pred, pos_label="Positive")
-    rec = recall_score(test_mani.label, y_pred, pos_label="Positive")
+    prec = precision_score(test_mani.label, y_pred, pos_label=True)
+    rec = recall_score(test_mani.label, y_pred, pos_label=True)
 
     # Write accuracy score
     fname = os.path.join(result_dir, "accuracy")
@@ -239,7 +267,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
         f.write("Precision score: " + str(round(prec*100, 3)) + "%" + "\n")
         f.write("Recall score: " + str(round(rec*100, 3)) + "%" +  "\n")
 
-    print("Accuracy Score:", acc)
+    LOGGER.info("Accuracy Score:", acc)
 
     # Save trained model if save_model is True
     if save_model:
@@ -248,7 +276,7 @@ def classify(train, test, result_dir, tag, save_model, pred_probability, interpr
     if pred_probability:
         log_pred_probability(df_feature_test, y_pred, test_mani, clf, result_dir, tag)
     if interpret:
-        log_interpretation(df_feature_test, clf, result_dir, cols)
+        log_interpretation(df_feature_test, test_mani, clf, result_dir, tag, cols)
 
     return list(test_mani.label), list(y_pred), list(test_mani.name), list(test_mani.visit_id)
 
@@ -263,7 +291,7 @@ def classify_crossval(df_labelled, result_dir, save_model, pred_probability, int
         result_dir: Output folder for results.
         save_model: Boolean value indicating whether to save the trained model or not.
         pred_probability: Boolean value indicating whether to save the prediction probabilities or not.
-        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.    
+        interpret: Boolean value indicating whether to use tree interpreter on predictions or not.
     Returns:
         results: List of results for each fold.
     """
@@ -274,11 +302,11 @@ def classify_crossval(df_labelled, result_dir, save_model, pred_probability, int
     used_test_ids = []
     results = []
 
-    print("Total Number of visit IDs:", len(vid_list))
-    print("Number of visit IDs to use in a fold:", num_test_vid)
+    LOGGER.info("Total Number of visit IDs: %d", len(vid_list))
+    LOGGER.info("Number of visit IDs to use in a fold: %d", num_test_vid)
 
     for i in range(0, num_iter):
-        print("Performing fold:", i)
+        LOGGER.info("Performing fold: %d", i)
         vid_list_iter = list(set(vid_list) - set(used_test_ids))
         chosen_test_vid = random.sample(vid_list_iter, num_test_vid)
         used_test_ids += chosen_test_vid
@@ -287,8 +315,8 @@ def classify_crossval(df_labelled, result_dir, save_model, pred_probability, int
         df_test = df_labelled[df_labelled['visit_id'].isin(chosen_test_vid)]
 
         fname = os.path.join(result_dir, "composition")
-        train_pos = len(df_train[df_train['label'] == 'Positive'])
-        test_pos = len(df_test[df_test['label'] == 'Positive'])
+        train_pos = len(df_train[df_train['label'] == True])
+        test_pos = len(df_test[df_test['label'] == True])
 
         with open(fname, "a") as f:
             f.write("\nFold " + str(i) + "\n")
@@ -317,30 +345,21 @@ def pipeline(feature_file, label_file, result_dir, save_model, pred_probability,
       Nothing, creates a result directory with all the results.
     """
 
-    df_features = pd.read_csv(feature_file)
-    df_labels = pd.read_csv(label_file)
-    result_dir.mkdir(parents=True, exist_ok=True)
+    df_features = pd.read_csv(feature_file, index_col=0)
+    df_labels = pd.read_csv(label_file, index_col=0)
+    if not os.path.exists(result_dir):
+        os.mkdir(result_dir)
 
     df_labelled = df_features.merge(df_labels[['visit_id', 'name', 'label']], on=['visit_id', 'name'])
-    
-    df_positive = df[df['label'] == 'Positive']
-    df_negative = df[df['label'] == 'Negative']
+    df_labelled = df_labelled[df_labelled['label'] != "Error"]
 
-    fname = os.path.join(result_dir, "composition")
-    with open(fname, "a") as f:
-        f.write("Number of samples: " + str(len(df)) + "\n")
-        f.write("Labelled samples: " + str(len(df_labelled)) + " " + get_perc(len(df_labelled), len(df)) + "\n")
-        f.write("Positive samples: " + str(len(df_positive)) + " " + get_perc(len(df_positive), len(df)) + "\n")
-        f.write("Negative samples: " + str(len(df_negative)) + " " + get_perc(len(df_negative), len(df)) + "\n")
-        f.write("\n")
-
-    results = classify_crossval(df_labelled, result_dir, folds, save_model, pred_probability, interpret)
+    results = classify_crossval(df_labelled, result_dir, save_model, pred_probability, interpret)
     report = describe_classif_reports(results, result_dir)
 
 def main(program: str, args: List[str]):
-    
+
     parser = argparse.ArgumentParser(prog=program, description="Run the WebGraph classification pipeline.")
-    
+
     parser.add_argument(
         "--features",
         type=str,

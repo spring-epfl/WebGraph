@@ -3,16 +3,18 @@ import json
 import traceback
 
 import pandas as pd
-    
+
+from logger import LOGGER
+
 def convert_attr(row):
-        
+
     """
     Function to create attributes for created elements.
 
     Args:
         row: Row of created elements DataFrame.
     Returns:
-        attr: JSON string of attributes for created elements. 
+        attr: JSON string of attributes for created elements.
     """
 
     attr = {}
@@ -26,11 +28,11 @@ def convert_attr(row):
         attr = json.dumps(attr)
         return attr
     except Exception as e:
-        print("[ convert_attr ] : ERROR - ", e, " @ ", row)
+        LOGGER.warning("[ convert_attr ] : ERROR - ", exc_info=True)
         return json.dumps(attr)
 
 def convert_subtype(arguments):
-        
+
     """
     Function to obtain subtype of an element.
 
@@ -68,10 +70,10 @@ def get_tag(record, key):
     except Exception as e:
         return ""
     return ""
-    
+
 
 def find_parent_elem(src_elements, df_element):
-    
+
     """
     Function to find parent element of .src JS elements.
 
@@ -81,7 +83,7 @@ def find_parent_elem(src_elements, df_element):
     Returns:
         result: Merged DataFrame representation linking created elements with src elements.
     """
-    
+
     src_elements['new_attr'] = src_elements['attributes'].apply(get_tag, key="fullopenwpm")
     df_element['new_attr'] = df_element['attr'].apply(get_tag, key="openwpm")
     result = src_elements.merge(df_element[['new_attr', 'name']], on='new_attr', how='left')
@@ -92,7 +94,7 @@ def build_html_components(df_javascript):
 
     """
     Function to create HTML nodes and edges. This is limited since we
-    don't capture all HTML behaviors -- we look at createElement and src JS calls. 
+    don't capture all HTML behaviors -- we look at createElement and src JS calls.
 
     Args:
         df_javascript: DataFrame representation of OpenWPM's javascript table.
@@ -108,17 +110,9 @@ def build_html_components(df_javascript):
         #Find all created elements
         created_elements = df_javascript[df_javascript['symbol'] == 'window.document.createElement'].copy()
 
-
         df_element_nodes = pd.DataFrame(columns=['visit_id', 'name', 'top_level_url', 'type', 'attr'])
 
         if len(created_elements) > 0:
-            created_elements['name'] = created_elements.index.to_series().apply(lambda x: "Element_" + str(x))
-            created_elements['type'] = 'Element'
-
-            created_elements['subtype_list'] = created_elements['arguments'].apply(convert_subtype)
-            created_elements['attr'] = created_elements.apply(convert_attr, axis=1)
-            created_elements['action'] = 'create'
-
             #Created Element nodes and edges (to be inserted)
             df_element_nodes = created_elements[['visit_id', 'name', 'top_level_url', 'type', 'attr']]
             df_create_edges = created_elements[['visit_id', 'script_url', 'name', 'top_level_url', 'action', 'time_stamp']]
@@ -151,8 +145,7 @@ def build_html_components(df_javascript):
             df_js_edges['attr'] = "N/A"
 
     except Exception as e:
-        print("Error in build_html_components:", e)
-        traceback.print_exc()
+        LOGGER.warning("Error in build_html_components:", exc_info=True)
         return df_js_nodes, df_js_edges
 
     return df_js_nodes, df_js_edges

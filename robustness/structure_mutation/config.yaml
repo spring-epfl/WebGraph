@@ -4,11 +4,12 @@ graph_data: graph.csv
 content_ldb: content.ldb
 feature_config: features.yaml
 vid_file: chosen_ids.json
+filterlists: filterlists
+parent_limit: 10
 
-model:  model.joblib
-pred_file: predictions
+model:  model_0.joblib
 
-result_dir: results
+result_dir: results_struct
 
 mutation_style:
   - node_addition

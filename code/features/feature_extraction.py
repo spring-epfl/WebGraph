@@ -99,6 +99,6 @@ def extract_graph_features(df_graph, G, vid, ldb, feature_config):
                 selected_features,
                 vid
             )
-            df_features = df_features.append(df_feature)
+            df_features = pd.concat([df_features, df_feature])
     
     return df_features

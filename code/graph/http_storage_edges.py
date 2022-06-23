@@ -4,8 +4,8 @@ import json
 import re
 import multidict
 from .utils import *
-import traceback
 
+from logger import LOGGER
 
 def parse_setcookie_header(cookie_header):
 
@@ -38,7 +38,7 @@ def parse_setcookie_header(cookie_header):
     except Exception as e:
         return cookie_list
     return cookie_list
-    
+
 def parse_cookie_header(cookie_header):
 
     """
@@ -86,9 +86,9 @@ def get_cookie_details(row):
         if not pd.isna(respattr):
             headers += json.loads(respattr)
         #headers = json.loads(reqattr) + json.loads(respattr)
-        header_dict = multidict.MultiDict(headers)  
+        header_dict = multidict.MultiDict(headers)
 
-        if "Cookie" in header_dict.keys():  
+        if "Cookie" in header_dict.keys():
             cookie_list = parse_cookie_header(header_dict["Cookie"])
             for cookie in cookie_list:
                 cookie_details.append([dst, cookie["name"], "get", json.dumps(cookie), visit_id, time_stamp])
@@ -101,7 +101,7 @@ def get_cookie_details(row):
             for cookie in cookie_list:
                 cookie_details.append([dst, cookie["name"], "set", json.dumps(cookie), visit_id, time_stamp])
     except Exception as e:
-        print("Error in http_cookies: getting cookie details")
+        LOGGER.warning("Error in http_cookies: getting cookie details")
 
     return cookie_details
 
@@ -111,7 +111,7 @@ def build_http_cookie_components(df_http_edges, df_http_nodes):
     Function to extract HTTP cookie nodes (cookies set via HTTP headers).
 
     Args:
-        df_http_edges: DataFrame representation of HTTP request edges 
+        df_http_edges: DataFrame representation of HTTP request edges
         df_http_nodes: DataFrame representation of HTTP request nodes
     Returns:
         df_http_cookie_nodes: DataFrame representation of HTTP cookie nodes
@@ -155,9 +155,8 @@ def build_http_cookie_components(df_http_edges, df_http_nodes):
             df_http_cookie_edges['response_status'] = "N/A"
             df_http_cookie_edges['post_body'] = np.nan
             df_http_cookie_edges['post_body_raw'] = np.nan
-            
+
     except Exception as e:
-        print("Error in http_cookie_components:", e)
-        traceback.print_exc()
+        LOGGER.warning("Error in http_cookie_components:", exc_info=True)
 
     return df_http_cookie_nodes, df_http_cookie_edges

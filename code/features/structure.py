@@ -1,9 +1,9 @@
 import networkx as nx
 import re
-from .utils import * 
+from .utils import *
 import time
 
-import traceback
+from logger import LOGGER
 
 def get_script_content_features(G, df_graph, node, ldb):
 
@@ -20,9 +20,9 @@ def get_script_content_features(G, df_graph, node, ldb):
     sc_features_names: script content feature names
   """
 
-  keywords_fp = ["CanvasRenderingContext2D", "HTMLCanvasElement", "toDataURL", 
-                  "getImageData", "measureText", "font", "fillText", "strokeText", 
-                  "fillStyle", "strokeStyle", "HTMLCanvasElement.addEventListener", 
+  keywords_fp = ["CanvasRenderingContext2D", "HTMLCanvasElement", "toDataURL",
+                  "getImageData", "measureText", "font", "fillText", "strokeText",
+                  "fillStyle", "strokeStyle", "HTMLCanvasElement.addEventListener",
                   "save", "restore"]
   ancestors = nx.ancestors(G, node)
   ascendant_script_has_eval_or_function = 0
@@ -53,7 +53,7 @@ def get_script_content_features(G, df_graph, node, ldb):
       except Exception as e:
         continue
   except Exception as e:
-    print("[ get_script_content_features ] : ERROR - ", e)
+    LOGGER.warning("[ get_script_content_features ] : ERROR - ", exc_info=True)
 
   sc_features = [ascendant_script_has_eval_or_function, ascendant_script_has_fp_keyword, \
               ascendant_script_length]
@@ -139,7 +139,7 @@ def get_connectivity_features(G, df_graph, node):
         if nx.get_node_attributes(G, 'type')[parent] == 'Script':
           is_parent_script = 1
         if nx.get_node_attributes(G, 'type')[parent] == 'Element':
-          attr = nx.get_node_attributes(G, 'attr')[parent] 
+          attr = nx.get_node_attributes(G, 'attr')[parent]
           attr = json.loads(attr)
           if (attr['eval']) and (attr['subtype'] == 'script'):
             is_eval_or_function = 1
@@ -153,7 +153,7 @@ def get_connectivity_features(G, df_graph, node):
         if nx.get_node_attributes(G, 'type')[ancestor] == 'Script':
           is_ancestor_script = 1
         if nx.get_node_attributes(G, 'type')[ancestor] == 'Element':
-          attr = nx.get_node_attributes(G, 'attr')[ancestor] 
+          attr = nx.get_node_attributes(G, 'attr')[ancestor]
           attr = json.loads(attr)
           if (attr['eval']) and (attr['subtype'] == 'script'):
             descendant_of_eval_or_function = 1
@@ -164,12 +164,12 @@ def get_connectivity_features(G, df_graph, node):
 
     parent_flag = 0
     descendant_flag = 0
-    
-   
+
+
     ascendant_has_ad_keyword = ad_keyword_ascendants(node, G)
     closeness_centrality = nx.closeness_centrality(G, node)
     average_degree_connectivity = nx.average_degree_connectivity(G)[in_out_degree]
-    
+
     try:
       H = G.copy().to_undirected()
       eccentricity = nx.eccentricity(H, node)
@@ -181,10 +181,9 @@ def get_connectivity_features(G, df_graph, node):
           eccentricity, is_parent_script, is_ancestor_script, \
           ascendant_has_ad_keyword, is_eval_or_function, \
           descendant_of_eval_or_function]
-  
-  except Exception as e:
 
-    print("Error in connectivity features:", e)
+  except Exception as e:
+    LOGGER.warning("Error in connectivity features:", exc_info=True)
     connectivity_features = [in_degree, out_degree, in_out_degree, \
           ancestors, descendants, closeness_centrality, average_degree_connectivity, \
           eccentricity, is_parent_script, is_ancestor_script, \
@@ -203,7 +202,7 @@ def get_connectivity_features(G, df_graph, node):
 def get_structure_features(G, df_graph, node, ldb):
 
   """
-  Function to extract structural features. This function calls 
+  Function to extract structural features. This function calls
   the other functions to extract different types of structural features.
 
   Args:
