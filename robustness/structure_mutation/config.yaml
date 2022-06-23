@@ -1,13 +1,13 @@
 #Sample config
 
-graph_data: graph.csv
-content_ldb: content.ldb
-feature_config: features.yaml
-vid_file: chosen_ids.json
-filterlists: filterlists
+graph_data: ../../code/out/graph.csv
+content_ldb: ../../code/out/content.ldb
+feature_config: ../../code/features.yaml
+vid_file: sample/chosen_ids.json
+filterlists: ../../filterlists
 parent_limit: 10
 
-model:  model_0.joblib
+model:  sample/model_1.joblib
 
 result_dir: results_struct
 
