@@ -22,7 +22,7 @@ from logger import LOGGER
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
-def load_config_info(filename:str) -> dict:
+def load_config_info(filename: str) -> dict:
     """Load features from features.yaml file
     :param filename: yaml file name containing feature names
     :return: dict of features to use.
@@ -31,7 +31,7 @@ def load_config_info(filename:str) -> dict:
         return full_load(file)
 
 
-def extract_features(pdf: pd.DataFrame, networkx_graph, visit_id:str, config_info:dict, ldb_file:str) -> pd.DataFrame:
+def extract_features(pdf: pd.DataFrame, networkx_graph, visit_id: str, config_info: dict, ldb_file: str) -> pd.DataFrame:
     """Getter to generate the features of each node in a graph.
     :param pdf: pandas df of nodes and edges in a graph.
     :param G: Graph object representation of the pdf.
@@ -43,7 +43,7 @@ def extract_features(pdf: pd.DataFrame, networkx_graph, visit_id:str, config_inf
     return df_features
 
 @return_none_if_fail()
-def find_setter_domain(setter:str) -> str:
+def find_setter_domain(setter: str) -> str:
     """Finds the domain from a setter 
     :param setter: string setter value
     :return: string domain value
@@ -52,7 +52,7 @@ def find_setter_domain(setter:str) -> str:
     return domain
 
 @return_none_if_fail(is_debug=True)
-def find_domain(row:pd.Series) -> Union[str, None]:
+def find_domain(row: pd.Series) -> Union[str, None]:
     """Finds the domain of a node 
     :param row: a row from the graph df representing a node.
     :return: string domain value or none if N/A
@@ -68,7 +68,7 @@ def find_domain(row:pd.Series) -> Union[str, None]:
     return domain
 
 @return_none_if_fail()
-def find_tld(top_level_url:str) -> Union[str, None]:
+def find_tld(top_level_url: str) -> Union[str, None]:
     """Finds the top level domain from a top level url
     :param top_level_url: string of the url
     :return: string domain value or none if N/A
@@ -79,7 +79,7 @@ def find_tld(top_level_url:str) -> Union[str, None]:
     else:
         return None
 
-def get_party(row:pd.Series) -> str:
+def get_party(row: pd.Series) -> str:
     """Finds whether a storage node is first party or third party
     :param row: a row from the graph df representing a node.
     :return: string party (first | third | N/A)
