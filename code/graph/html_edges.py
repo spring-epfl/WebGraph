@@ -113,6 +113,12 @@ def build_html_components(df_javascript):
         df_element_nodes = pd.DataFrame(columns=['visit_id', 'name', 'top_level_url', 'type', 'attr'])
 
         if len(created_elements) > 0:
+            created_elements['name'] = created_elements.index.to_series().apply(lambda x: "Element_" + str(x))
+            created_elements['type'] = 'Element'
+
+            created_elements['subtype_list'] = created_elements['arguments'].apply(convert_subtype)
+            created_elements['attr'] = created_elements.apply(convert_attr, axis=1)
+            created_elements['action'] = 'create'
             #Created Element nodes and edges (to be inserted)
             df_element_nodes = created_elements[['visit_id', 'name', 'top_level_url', 'type', 'attr']]
             df_create_edges = created_elements[['visit_id', 'script_url', 'name', 'top_level_url', 'action', 'time_stamp']]
