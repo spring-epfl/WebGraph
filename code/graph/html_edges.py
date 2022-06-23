@@ -109,41 +109,40 @@ def build_html_components(df_javascript):
     try:
         #Find all created elements
         created_elements = df_javascript[df_javascript['symbol'] == 'window.document.createElement'].copy()
-        created_elements['name'] = created_elements.index.to_series().apply(lambda x: "Element_" + str(x))
-        created_elements['type'] = 'Element'
 
-        created_elements['subtype_list'] = created_elements['arguments'].apply(convert_subtype)
-        created_elements['attr'] = created_elements.apply(convert_attr, axis=1)
-        created_elements['action'] = 'create'
+        df_element_nodes = pd.DataFrame(columns=['visit_id', 'name', 'top_level_url', 'type', 'attr'])
 
-        #Created Element nodes and edges (to be inserted)
-        df_element_nodes = created_elements[['visit_id', 'name', 'top_level_url', 'type', 'attr']]
-        df_create_edges = created_elements[['visit_id', 'script_url', 'name', 'top_level_url', 'action', 'time_stamp']]
-        df_create_edges = df_create_edges.rename(columns={'script_url' : 'src', 'name' : 'dst'})
-
+        if len(created_elements) > 0:
+            #Created Element nodes and edges (to be inserted)
+            df_element_nodes = created_elements[['visit_id', 'name', 'top_level_url', 'type', 'attr']]
+            df_create_edges = created_elements[['visit_id', 'script_url', 'name', 'top_level_url', 'action', 'time_stamp']]
+            df_create_edges = df_create_edges.rename(columns={'script_url' : 'src', 'name' : 'dst'})
+           
         src_elements = df_javascript[(df_javascript['symbol'].str.contains("Element.src")) & (df_javascript['operation'].str.contains('set'))].copy()
-        src_elements['type'] = "Request"
-        src_elements = find_parent_elem(src_elements, df_element_nodes)
-        src_elements['action'] = "setsrc"
+        
+        if len(src_elements) > 0:
+            src_elements['type'] = "Request"
+            src_elements = find_parent_elem(src_elements, df_element_nodes)
+            src_elements['action'] = "setsrc"
 
-        #Src Element nodes and edges (to be inserted)
-        df_src_nodes = src_elements[['visit_id', 'value', 'top_level_url', 'type', 'attributes']].copy()
-        df_src_nodes = df_src_nodes.rename(columns={'value': 'name', 'attributes': 'attr'})
-        df_src_nodes = df_src_nodes.dropna(subset=["name"])
+            #Src Element nodes and edges (to be inserted)
+            df_src_nodes = src_elements[['visit_id', 'value', 'top_level_url', 'type', 'attributes']].copy()
+            df_src_nodes = df_src_nodes.rename(columns={'value': 'name', 'attributes': 'attr'})
+            df_src_nodes = df_src_nodes.dropna(subset=["name"])
+        
 
-
-        df_src_edges = src_elements[['visit_id', 'name', 'value', 'top_level_url', 'action', 'time_stamp']]
-        df_src_edges = df_src_edges.dropna(subset=["name"])
-        df_src_edges = df_src_edges.rename(columns={'name': 'src', 'value': 'dst'})
-
-        df_js_nodes = pd.concat([df_element_nodes, df_src_nodes]).drop_duplicates()
-        df_js_nodes = df_js_nodes.drop(columns=['new_attr'])
-        df_js_edges = pd.concat([df_create_edges, df_src_edges])
-
-        df_js_edges['reqattr'] = "N/A"
-        df_js_edges['respattr'] = "N/A"
-        df_js_edges['response_status'] = "N/A"
-        df_js_edges['attr'] = "N/A"
+            df_src_edges = src_elements[['visit_id', 'name', 'value', 'top_level_url', 'action', 'time_stamp']]
+            df_src_edges = df_src_edges.dropna(subset=["name"])
+            df_src_edges = df_src_edges.rename(columns={'name': 'src', 'value': 'dst'})
+        
+            df_js_nodes = pd.concat([df_element_nodes, df_src_nodes]).drop_duplicates()
+            df_js_nodes = df_js_nodes.drop(columns=['new_attr'])
+            df_js_edges = pd.concat([df_create_edges, df_src_edges])
+        
+            df_js_edges['reqattr'] = "N/A"
+            df_js_edges['respattr'] = "N/A"
+            df_js_edges['response_status'] = "N/A"
+            df_js_edges['attr'] = "N/A"
 
     except Exception as e:
         LOGGER.warning("Error in build_html_components:", exc_info=True)
