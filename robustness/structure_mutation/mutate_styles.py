@@ -1,7 +1,4 @@
-import graph as gs
-import labelling as ls
-import features as fs
-from features.feature_extraction import extract_graph_features
+from context import *
 from mutate_utils import *
 from obfuscation import * 
 

@@ -1,4 +1,4 @@
-from utils import *
+
 from obfuscation import *
 from mutate_styles import *
 from typing import List
@@ -18,13 +18,7 @@ import logging
 from logging.config import fileConfig
 import traceback
 
-import graph as gs
-import labelling as ls
-import labelling.filterlists as fs
-from features.feature_extraction import extract_graph_features
-from mutate_utils import *
-from obfuscation import *
-from mutate_styles import *
+from context import *
 
 fileConfig('logging.conf')
 logger = logging.getLogger('root')
@@ -209,8 +203,8 @@ def pipeline(config):
         vid_list = json.loads(f.read())['vids']
         vid_list = sorted(vid_list)
 
-    ls.download_lists(Path(FILTERLIST_DIR), overwrite=False)
-    filterlists, filterlist_rules = ls.create_filterlist_rules(Path(FILTERLIST_DIR))
+    fs.download_lists(Path(FILTERLIST_DIR), overwrite=False)
+    filterlists, filterlist_rules = fs.create_filterlist_rules(Path(FILTERLIST_DIR))
 
     for visit_id in vid_list:
 
