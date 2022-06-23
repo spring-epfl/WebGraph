@@ -8,7 +8,6 @@ filterlists: filterlists
 parent_limit: 10
 
 model:  model_0.joblib
-pred_file: tp_0
 
 result_dir: results_struct
 

@@ -187,7 +187,6 @@ def pipeline(config):
     LDB_PATH = config['content_ldb']
     MODEL_FILE = config['model']
     RESULT_DIR = config['result_dir']
-    PRED_FILE = config['pred_file']
     GRAPH_DATA_FILE = config['graph_data']
     VID_FILE = config['vid_file']
     MUTATION_STYLE = config['mutation_style']
