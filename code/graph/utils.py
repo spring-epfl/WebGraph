@@ -1,6 +1,7 @@
 import tldextract
 import numpy as np
 import pandas as pd
+from typing import Union
 
 def get_cookiedom_key(name, domain):
 
@@ -19,7 +20,7 @@ def get_cookiedom_key(name, domain):
         return name
     return name
 
-def get_domain(url):
+def get_domain(url:Union[str, list[str]]) -> Union[str, list[str]]:
 
     """Function to get eTLD+1 from a URL.
 
