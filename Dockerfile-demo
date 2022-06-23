@@ -1,0 +1,5 @@
+FROM webgraph:latest
+
+COPY datadir /datadir
+
+ENTRYPOINT ["/bin/bash"]
