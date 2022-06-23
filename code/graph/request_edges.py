@@ -223,7 +223,11 @@ def get_cs_edges(df_requests, df_responses, call_stacks):
                          'headers_y', 'time_stamp_x', 'response_status', 'post_body', 'post_body_raw', 'content_hash', 'call_stack', 'key_x']]
     df_merge = df_merge.rename(columns={'url_x': 'name', 'headers_x': 'reqattr', 'headers_y': 'respattr',
                                         'time_stamp_x': 'time_stamp', 'key_x': 'key'})
-
+    
+    # return empty outputs if empty
+    if len(df_merge) == 0:
+        return pd.DataFrame(), []
+      
     df_merge['cs_edges'] = df_merge.apply(process_call_stack, axis=1)
     df = df_merge[['top_level_url', 'cs_edges']]
     df = df.explode('cs_edges').dropna()

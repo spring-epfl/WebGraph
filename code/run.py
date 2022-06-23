@@ -2,7 +2,7 @@ import argparse
 import sys
 import traceback
 from pathlib import Path
-from typing import List
+from typing import List, Union
 import time
 
 import pandas as pd
@@ -13,25 +13,25 @@ import leveldb
 import graph as gs
 from graph.database import Database
 import labelling as ls
+import labelling.filterlists as fs
 from features.feature_extraction import extract_graph_features
 
 from utils import return_none_if_fail
 from logger import LOGGER
 
-
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
-def load_config_info(filename):
+def load_config_info(filename: str) -> dict:
     """Load features from features.yaml file
     :param filename: yaml file name containing feature names
-    :return: list of features to use.
+    :return: dict of features to use.
     """
     with open(filename) as file:
         return full_load(file)
 
 
-def extract_features(pdf, networkx_graph, visit_id, config_info, ldb_file):
+def extract_features(pdf: pd.DataFrame, networkx_graph, visit_id: str, config_info: dict, ldb_file: str) -> pd.DataFrame:
     """Getter to generate the features of each node in a graph.
     :param pdf: pandas df of nodes and edges in a graph.
     :param G: Graph object representation of the pdf.
@@ -43,13 +43,20 @@ def extract_features(pdf, networkx_graph, visit_id, config_info, ldb_file):
     return df_features
 
 @return_none_if_fail()
-def find_setter_domain(setter):
+def find_setter_domain(setter: str) -> str:
+    """Finds the domain from a setter 
+    :param setter: string setter value
+    :return: string domain value
+    """
     domain = gs.get_domain(setter)
     return domain
 
 @return_none_if_fail(is_debug=True)
-def find_domain(row):
-
+def find_domain(row: pd.Series) -> Union[str, None]:
+    """Finds the domain of a node 
+    :param row: a row from the graph df representing a node.
+    :return: string domain value or none if N/A
+    """
     domain = None
     node_type = row['type']
     if (node_type == 'Document') or (node_type == 'Request') or (node_type == 'Script'):
@@ -61,15 +68,22 @@ def find_domain(row):
     return domain
 
 @return_none_if_fail()
-def find_tld(top_level_url):
+def find_tld(top_level_url: str) -> Union[str, None]:
+    """Finds the top level domain from a top level url
+    :param top_level_url: string of the url
+    :return: string domain value or none if N/A
+    """
     if top_level_url:
         tld = gs.get_domain(top_level_url)
         return tld
     else:
         return None
 
-def get_party(row):
-
+def get_party(row: pd.Series) -> str:
+    """Finds whether a storage node is first party or third party
+    :param row: a row from the graph df representing a node.
+    :return: string party (first | third | N/A)
+    """
     if row['type'] == 'Storage':
         if row['domain'] and row['top_level_domain']:
             if row['domain'] == row['top_level_domain']:
@@ -78,17 +92,25 @@ def get_party(row):
                 return 'third'
     return "N/A"
 
-def find_setters(df_all_storage_nodes, df_http_cookie_nodes, df_all_storage_edges, df_http_cookie_edges):
-
+def find_setters(df_all_storage_nodes: pd.DataFrame, df_http_cookie_nodes: pd.DataFrame, df_all_storage_edges: pd.DataFrame, df_http_cookie_edges: pd.DataFrame) -> pd.DataFrame:
+    """Finds the nodes that first set each of the present cookies.
+    :param row: a row from the graph df representing a node.
+    :return: string domain value or none if N/A
+    """
+    
     df_setter_nodes = pd.DataFrame(columns=['visit_id', 'name', 'type', 'attr', 'top_level_url', 'domain', 'setter', 'setting_time_stamp'])
 
     try:
 
         df_storage_edges = pd.concat([df_all_storage_edges, df_http_cookie_edges])
         if len(df_storage_edges) > 0:
-            df_storage_sets = df_storage_edges[(df_storage_edges['action'] == 'set')
+            # get all set events for http and js cookies
+            df_storage_sets = df_storage_edges[(df_storage_edges['action'] == 'set') 
                                 | (df_storage_edges['action'] == 'set_js')]
+
+            # find the initial setter nodes for each cookie
             df_setters = gs.get_original_cookie_setters(df_storage_sets)
+            
             df_storage_nodes = pd.concat([df_all_storage_nodes, df_http_cookie_nodes])
             df_setter_nodes = df_storage_nodes.merge(df_setters, on=['visit_id', 'name'], how='outer')
 
@@ -98,13 +120,15 @@ def find_setters(df_all_storage_nodes, df_http_cookie_nodes, df_all_storage_edge
     return df_setter_nodes
 
 
-def build_graph(database: Database, visit_id):
+def build_graph(database: Database, visit_id: str) -> pd.DataFrame:
     """Read SQL data from crawler for a given visit_ID.
     :param visit_id: visit ID of a crawl URL.
     :return: Parsed information (nodes and edges) in pandas df.
     """
     # Read tables from DB and store as DataFrames
     df_requests, df_responses, df_redirects, call_stacks, javascript = database.website_from_visit_id(visit_id)
+    
+    # extract nodes and edges from all categories of interest as described in the paper
     df_js_nodes, df_js_edges = gs.build_html_components(javascript)
     df_request_nodes, df_request_edges = gs.build_request_components(df_requests, df_responses, df_redirects, call_stacks)
     df_all_storage_nodes, df_all_storage_edges = gs.build_storage_components(javascript)
@@ -142,7 +166,7 @@ def build_graph(database: Database, visit_id):
 
     return df_all_graph
 
-def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, overwrite, filterlists, filterlist_rules):
+def apply_tasks(df: pd.DataFrame, visit_id: int, config_info: dict , ldb_file: Path, output_dir: Path, overwrite: bool, filterlists: list[str], filterlist_rules: dict):
 
     """ Sequence of tasks to apply on each website crawled.
     :param df: the graph data (nodes and edges) in pandas df.
@@ -161,17 +185,22 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
 
     try:
         start = time.time()
+
+        # export the graph dataframe to csv file
         graph_path = output_dir / "graph.csv"
         if overwrite or not graph_path.is_file():
             df.reindex(columns=graph_columns).to_csv(str(graph_path))
         else:
             df.reindex(columns=graph_columns).to_csv(str(graph_path), mode='a', header=False)
 
+        # building networkx_graph
         networkx_graph = gs.build_networkx_graph(df)
-
+        
+        # extracting features from graph data and graph structure
         df_features = extract_features(df, networkx_graph, visit_id, config_info, ldb_file)
         features_path = output_dir / "features.csv"
-
+        
+        # export the features to csv file
         if overwrite or not features_path.is_file():
             df_features.reindex(columns=feature_columns).to_csv(str(features_path))
         else:
@@ -192,17 +221,29 @@ def apply_tasks(df: pd.DataFrame, visit_id, config_info , ldb_file, output_dir, 
         LOGGER.warning("Errored in pipeline", exc_info=True)
 
 
-def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, output_dir: Path, overwrite=True):
+def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir: Path, output_dir: Path, overwrite=True):
+    
+    """ Graph processing and labeling pipeline
+    :param db_file: the graph data (nodes and edges) in pandas df.
+    :param visit_id: visit ID of a crawl URL.
+    :param config_info: dictionary containing features to use.
+    :param ldb_file: path to ldb file.
+    :param output_dir: path to the output directory.
+    :param overwrite: set True to overwrite the content of the output directory.
+    """
 
     number_failures = 0
-
-    ls.download_lists(filterlist_dir, overwrite)
-    filterlists, filterlist_rules = ls.create_filterlist_rules(filterlist_dir)
+    
+    # setup and load files
+    fs.download_lists(filterlist_dir, overwrite)
+    filterlists, filterlist_rules = fs.create_filterlist_rules(filterlist_dir)
     config_info = load_config_info(features_file)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with Database(db_file) as database:
+
+        # read site visits
         try:
             sites_visits = database.sites_visits()
         except Exception as e:
@@ -211,15 +252,20 @@ def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, outpu
 
 
         for _, row in tqdm(sites_visits.iterrows(), total=len(sites_visits), position=0, leave=True, ascii=True):
-            # For each visit, grab the visit_id and the site_url
+            
+            # For each visit, grab the visit_id
             visit_id = row['visit_id']
             tqdm.write("")
             tqdm.write(f"• Visit ID: {visit_id}")
 
             try:
                 start = time.time()
+
+                # build graph nodes and edges dataframe
                 pdf = build_graph(database, visit_id)
                 tqdm.write(str(pdf.shape))
+
+                # run the feature extraction tasks on the dataframe and node labeling
                 pdf.groupby(['visit_id', 'top_level_domain']).apply(apply_tasks, visit_id, config_info, ldb_file, output_dir, overwrite, filterlists, filterlist_rules)
                 end = time.time()
                 LOGGER.info("Done! %d", end - start)
@@ -229,8 +275,6 @@ def pipeline(db_file: Path, ldb_file, features_file, filterlist_dir: Path, outpu
                 tqdm.write(f"Fail: {number_failures}")
                 tqdm.write(f"Error: {e}")
                 traceback.print_exc()
-
-            #break
 
     percent = (number_failures/len(sites_visits))*10
     LOGGER.info(f"Fail: {number_failures}, Total: {len(sites_visits)}, Percentage:{percent} %s", str(db_file))
