@@ -59,14 +59,25 @@ During the experiment, one of the files in the result directory `diff_stats` wil
 ```Iteration: 20 Diff: -2 Desired: 0 Undesired: 2 ad_adv_content_adv: 0 ad_others_content_others: 0 ad_tp_content_tp: 0 ad_fp_content_fp: 0 content_others_ad_others: 1 content_tp_ad_tp: 1 content_fp_ad_fp: 0 content_adv_ad_adv: 1```
 
 > Iteration: Iteration number
+> 
 > Diff: Difference between desired and undesired switches
+> 
 > Desired: Number of desired switches
+> 
 > Undesired: Number of undesired switches
+> 
 > ad_adv_content_adv: Number of adversary nodes that switched prediction from ATS to non-ATS
+> 
 > ad_others_content_others: Number of non-adversary nodes that switched prediction from ATS to non-ATS
+> 
 > ad_tp_content_tp: Number of non-adversary third party nodes that switched prediction from ATS to non-ATS
+> 
 > ad_fp_content_fp: Number of non-adversary first party nodes that switched prediction from ATS to non-ATS
+> 
 > content_others_ad_others: Number of non-adversary nodes that switched prediction from non-ATS to ATS
+> 
 > content_tp_ad_tp: Number of non-adversary third party nodes that switched prediction from non-ATS to ATS
+> 
 > content_fp_ad_fp: Number of non-adversary first party nodes that switched prediction from non-ATS to ATS
+> 
 > content_adv_ad_adv: Number of adversary nodes that switched prediction from non-ATS to ATS
