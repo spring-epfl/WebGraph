@@ -43,23 +43,28 @@ def mutate_graph(df_graph_vid, G, df_nodes, third_party_node_names, original_tlu
         original_tlu: Top level URL
         ct: Iteration number
         result_dir: Results folder path
-        run: Run number
         visit_id: Visit ID
         ldb: Content LDB
         feature_config: Feature config
-        clf: Classifier
+        clf: Trained classifier
         mapping_dict: Dictionary of content mutation mappings
+        num_parent_nodes: Number of start nodes to run the mutation
+        mutation_style: The types of mutations to be run
+        filterlists: Names of filter lists to label nodes
+        filterlist_rules: Filter list rules to label nodes.
+
     Returns:
-        G_mutate: Mutated graph 
-        df_nodes: Set of nodes in mutated graph
+        G_mutate: Mutated networkX graph
+        df_graph_mut_new: DataFrame of mutated graph
+        df_new_node: Chosen parent starter node
+        chosen_type: Most successful chosen mutation type
 
     This functions does the following:
 
     1. Create mutated graphs by calling expand_graph on each adversary node.
-    2. Calculate the diff value for each graph.
+    2. Calculate the diff value (desired/undesired tradeoff) for each graph.
     3. Select the graph with the maximum diff value.
     4. Write results to files.
-
     """
 
     df_all_results = pd.DataFrame()
@@ -175,16 +180,13 @@ def pipeline(config):
        using a trained model.
     2. Get the adversary's nodes on the graph. Default adversary is a third party with
        the largest number of nodes present. This can be changed to all third parties.
-       Sample nodes to appropriate l_T value.
+       Sample nodes to appropriate value.
     3. Perform content mutation on the graph. 
     4. Run WebGraph, get classification switches. Calculate required number of switches
        for structural mutation.
     5. Run structural/flow mutation for specified number of iterations (here up to 20% growth).
        After each iteration, write results to file and perform re-sampling of parent nodes.
 
-    Changes for super adversary:
-
-    1. No sampling of nodes. 
     """
 
     LDB_PATH = config['content_ldb']

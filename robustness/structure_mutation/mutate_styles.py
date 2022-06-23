@@ -20,10 +20,10 @@ def add_node(current_node_f, df_graph_vid, G, third_party_node_names, original_t
              ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
 
     """
-    Function to return a mutated graph.
+    Function to return a mutated graph by node addition.
 
     Args:
-        current_node: Node that is the parent to add a new child to.
+        current_node_f: Node that is the parent to add a new child to.
         df_graph_vid: DataFrame representing graph
         G: Graph in networkx format
         third_party_node_names: List of adversary URLs
@@ -35,13 +35,12 @@ def add_node(current_node_f, df_graph_vid, G, third_party_node_names, original_t
         feature_config: Feature config
         clf: Classifier
         mapping_dict: Dictionary of content mutation mappings
+        filterlists: Names of filter lists to label nodes
+        filterlist_rules: Filter list rules to label nodes.
     Returns:
-        result_dict: Result of switches in classification.
-        diff: Difference between desired and undesired switches.
-        G_json: JSON format of mutated graph
-        new_node: New added node
-        node_info_dict: Information about new node
-        folder_tag: Tag for output folders
+        df: DataFrame of switches in classification 
+        df_graph_new: DataFrame of new graph 
+        new_node_f: Newly added node
 
     This functions does the following:
 
@@ -112,6 +111,37 @@ def find_storage_edges(df_graph_vid, third_party_node_names):
 def remove_storage_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, visit_id, 
     ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
 
+    """
+    Function to return a mutated graph by storage removal.
+
+    Args:
+        df_chosen edge: Chosen storage edge
+        df_graph_vid: DataFrame representing graph
+        G: Graph in networkx format
+        third_party_node_names: List of adversary URLs
+        original_tlu: Top level URL
+        ct: Iteration number
+        result_dir: Results folder path
+        visit_id: Visit ID
+        ldb: Content LDB
+        feature_config: Feature config
+        clf: Classifier
+        mapping_dict: Dictionary of content mutation mappings
+        filterlists: Names of filter lists to label nodes
+        filterlist_rules: Filter list rules to label nodes.
+    Returns:
+        df: DataFrame of switches in classification 
+        df_new_edges: DataFrame of updated edges
+        
+
+    This functions does the following:
+
+    1. Removes storage edge.
+    2. Perform classification.
+    3. Compare with original classifications (original = content mutated graph)
+    4. Return results.
+    """
+
     df_new_edges = pd.concat([df_graph_vid, df_chosen_edge], ignore_index=True).drop_duplicates(keep=False)
     #G_new = build_graph(df_new_edges)
     G_new = G.copy()
@@ -167,6 +197,38 @@ def find_url_receivers(df_graph_vid, third_party_node_names):
 def obfuscate_url(dest, to_replace, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, visit_id, 
     ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
 
+    """
+    Function to return a mutated graph by URL obfuscation.
+
+    Args:
+        dest: Original URL
+        to_replace: New URL
+        df_graph_vid: DataFrame representing graph
+        G: Graph in networkx format
+        third_party_node_names: List of adversary URLs
+        original_tlu: Top level URL
+        ct: Iteration number
+        result_dir: Results folder path
+        visit_id: Visit ID
+        ldb: Content LDB
+        feature_config: Feature config
+        clf: Classifier
+        mapping_dict: Dictionary of content mutation mappings
+        filterlists: Names of filter lists to label nodes
+        filterlist_rules: Filter list rules to label nodes.
+    Returns:
+        df: DataFrame of switches in classification 
+        df_new_edges: DataFrame of updated edges
+        
+
+    This functions does the following:
+
+    1. Updates URL to obfuscate cookie values.
+    2. Perform classification.
+    3. Compare with original classifications (original = content mutated graph)
+    4. Return results.
+    """
+
     new_url = dest
     for item in to_replace:
         to_change = new_url[item[0]:item[0]+item[1]]
@@ -215,6 +277,37 @@ def find_redirect_edges(df_graph_vid, third_party_node_names):
 
 def redistribute_redirect_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, visit_id, 
     ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
+
+    """
+    Function to return a mutated graph by redirect redistribution.
+
+    Args:
+        df_chosen_edge: Edge to be changed.
+        df_graph_vid: DataFrame representing graph
+        G: Graph in networkx format
+        third_party_node_names: List of adversary URLs
+        original_tlu: Top level URL
+        ct: Iteration number
+        result_dir: Results folder path
+        visit_id: Visit ID
+        ldb: Content LDB
+        feature_config: Feature config
+        clf: Classifier
+        mapping_dict: Dictionary of content mutation mappings
+        filterlists: Names of filter lists to label nodes
+        filterlist_rules: Filter list rules to label nodes.
+    Returns:
+        df: DataFrame of switches in classification 
+        df_new_edges: DataFrame of updated edges
+        
+
+    This functions does the following:
+
+    1. Changes redirect pattern.
+    2. Perform classification.
+    3. Compare with original classifications (original = content mutated graph)
+    4. Return results.
+    """
 
     http_status = [300, 301, 302, 303, 307, 308]
     http_status += [str(x) for x in http_status]

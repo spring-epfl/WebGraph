@@ -392,7 +392,7 @@ def find_third_parties(df):
         else:
             return "unknown"
     except Exception as e:
-        print(e, df['name'], df['top_level_url'])
+        print(e)
 
 def is_third_party(domain, tlu):
 
@@ -466,8 +466,7 @@ def write_successful_info_to_file(ct, success_dir, df_chosen, convert=True):
 def calculate_misclassifications_mutated(df, df_original, mapping_dict, adv_node_names, tlu):
 
     #Get mappings of mutated URLs
-    #df['original_name'] = df['name'].apply(get_mapping, mapping_dict)
-
+    
     #Divide into adversary and non-adversary nodes
     df_original_adv = df_original[df_original['name'].isin(adv_node_names)]
     df_new_adv = df[df['name'].isin(adv_node_names)]
