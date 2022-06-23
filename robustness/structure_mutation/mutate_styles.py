@@ -1,5 +1,7 @@
-from graph_builder import *
-from extraction_utils import *
+import graph as gs
+import labelling as ls
+import features as fs
+from features.feature_extraction import extract_graph_features
 from mutate_utils import *
 from obfuscation import * 
 
@@ -13,8 +15,9 @@ from logging.config import fileConfig
 fileConfig('logging.conf')
 logger = logging.getLogger('styles')
 
-def add_node(current_node_f, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, run, visit_id, 
-    all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers, mapping_dict):
+
+def add_node(current_node_f, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, visit_id, 
+             ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
 
     """
     Function to return a mutated graph.
@@ -27,14 +30,10 @@ def add_node(current_node_f, df_graph_vid, G, third_party_node_names, original_t
         original_tlu: Top level URL
         ct: Iteration number
         result_dir: Results folder path
-        run: Run number
         visit_id: Visit ID
-        all_async_dict: Async dict
-        all_defer_dict: Defer dict
         ldb: Content LDB
         feature_config: Feature config
         clf: Classifier
-        parsers: Parsers for labelling
         mapping_dict: Dictionary of content mutation mappings
     Returns:
         result_dict: Result of switches in classification.
@@ -71,14 +70,14 @@ def add_node(current_node_f, df_graph_vid, G, third_party_node_names, original_t
         response_status=int(new_edge_dict['response_status']), time_stamp=new_edge_dict['time_stamp'])
 
     folder_tag = str(ct) + "_" + str(random.randint(0,10000)) + "_add_node"
-    num_test = extract_and_classify(df_graph_new, G_copy, result_dir, folder_tag, visit_id, all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers)
+    num_test = extract_and_classify(df_graph_new, G, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
     
     new_dirname = os.path.join(result_dir, folder_tag)
     #Uncomment if comparison is with original graph
     #df_original = read_pred(os.path.join(result_dir, "original", "tp_0"))
     #Comparison with content mutated graph
-    df_original = read_pred(os.path.join(result_dir, "0_cm", "tp_0"))
-    df_new = read_pred(os.path.join(new_dirname, "tp_0"))
+    df_original = read_prediction_df(os.path.join(result_dir, "0_content_mutated", "tp_0"))
+    df_new = read_prediction_df(os.path.join(new_dirname, "tp_0"))
     result_dict, diff = calculate_misclassifications_mutated(df_new, df_original, mapping_dict, third_party_node_names, original_tlu)
     result_dict = json.dumps(result_dict)
 
@@ -110,8 +109,8 @@ def find_storage_edges(df_graph_vid, third_party_node_names):
 
     return df_storage_edges
 
-def remove_storage_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, run, visit_id, 
-    all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers, mapping_dict):
+def remove_storage_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, visit_id, 
+    ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
 
     df_new_edges = pd.concat([df_graph_vid, df_chosen_edge], ignore_index=True).drop_duplicates(keep=False)
     #G_new = build_graph(df_new_edges)
@@ -123,11 +122,10 @@ def remove_storage_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names,
         logger.error("Error removing storage edge: " + str(e))
 
     folder_tag = str(ct) + "_" + str(random.randint(0,10000)) + "_remove_storage"
-    num_test = extract_and_classify(df_new_edges, G_new, result_dir, folder_tag, visit_id, all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers)
-    
+    num_test = extract_and_classify(df_graph_edges, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
     new_dirname = os.path.join(result_dir, folder_tag)
-    df_original = read_pred(os.path.join(result_dir, "0_cm", "tp_0"))
-    df_new = read_pred(os.path.join(new_dirname, "tp_0"))
+    df_original = read_prediction_df(os.path.join(result_dir, "0_content_mutated", "tp_0"))
+    df_new = read_prediction_df(os.path.join(new_dirname, "tp_0"))
     result_dict, diff = calculate_misclassifications_mutated(df_new, df_original, mapping_dict, third_party_node_names, original_tlu)
     result_dict = json.dumps(result_dict)
 
@@ -150,7 +148,7 @@ def remove_storage_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names,
 def find_url_receivers(df_graph_vid, third_party_node_names):
 
     df_cookie_set = df_graph_vid[(df_graph_vid['action'] == 'set') | (df_graph_vid['action'] == 'set_js')]
-    df_cookie_set['cookie_val'] = df_cookie_set['attr'].apply(get_cookieval)
+    df_cookie_set['cookie_val'] = df_cookie_set['attr'].apply(fs.get_cookieval)
     cookie_values = list(set(df_cookie_set['cookie_val'].tolist()))
     urls_to_obfuscate = {}
     
@@ -166,8 +164,8 @@ def find_url_receivers(df_graph_vid, third_party_node_names):
     return urls_to_obfuscate
 
 
-def obfuscate_url(dest, to_replace, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, run, visit_id, 
-    all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers, mapping_dict):
+def obfuscate_url(dest, to_replace, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, visit_id, 
+    ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
 
     new_url = dest
     for item in to_replace:
@@ -179,11 +177,11 @@ def obfuscate_url(dest, to_replace, df_graph_vid, G, third_party_node_names, ori
     G_new = build_graph(df_graph_new)
 
     folder_tag = str(ct) + "_" + str(random.randint(0,10000)) + "_obfuscate_url"
-    num_test = extract_and_classify(df_graph_new, G_new, result_dir, folder_tag, visit_id, all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers)
+    num_test = extract_and_classify(df_graph_new, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
     
     new_dirname = os.path.join(result_dir, folder_tag)
-    df_original = read_pred(os.path.join(result_dir, "0_cm", "tp_0"))
-    df_new = read_pred(os.path.join(new_dirname, "tp_0"))
+    df_original = read_prediction_df(os.path.join(result_dir, "0_content_mutated", "tp_0"))
+    df_new = read_prediction_df(os.path.join(new_dirname, "tp_0"))
     result_dict, diff = calculate_misclassifications_mutated(df_new, df_original, mapping_dict, third_party_node_names, original_tlu)
     result_dict = json.dumps(result_dict)
 
@@ -215,8 +213,8 @@ def find_redirect_edges(df_graph_vid, third_party_node_names):
     return df_redirects
 
 
-def redistribute_redirect_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, run, visit_id, 
-    all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers, mapping_dict):
+def redistribute_redirect_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names, original_tlu, ct, result_dir, visit_id, 
+    ldb, feature_config, clf, mapping_dict, filterlists, filterlist_rules):
 
     http_status = [300, 301, 302, 303, 307, 308]
     http_status += [str(x) for x in http_status]
@@ -280,11 +278,11 @@ def redistribute_redirect_edge(df_chosen_edge, df_graph_vid, G, third_party_node
     df_new_edges = pd.concat([df_graph_vid, df_chosen_edge], ignore_index=True).drop_duplicates()
 
     folder_tag = str(ct) + "_" + str(random.randint(0,10000)) + "_remove_redirect"
-    num_test = extract_and_classify(df_new_edges, G_new, result_dir, folder_tag, visit_id, all_async_dict, all_defer_dict, ldb, feature_config, clf, parsers)
-    
+    num_test = extract_and_classify(df_graph_edges, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
+ 
     new_dirname = os.path.join(result_dir, folder_tag)
-    df_original = read_pred(os.path.join(result_dir, "0_cm", "tp_0"))
-    df_new = read_pred(os.path.join(new_dirname, "tp_0"))
+    df_original = read_prediction_df(os.path.join(result_dir, "0_content_mutated", "tp_0"))
+    df_new = read_prediction_df(os.path.join(new_dirname, "tp_0"))
     result_dict, diff = calculate_misclassifications_mutated(df_new, df_original, mapping_dict, third_party_node_names, original_tlu)
     result_dict = json.dumps(result_dict)
 

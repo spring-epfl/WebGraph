@@ -188,6 +188,28 @@ def log_interpretation(df_feature_test, test_mani, clf, result_dir, tag, cols):
         f.write(json.dumps(data_dict, indent=4))
 
 
+def classify_with_model(clf, test, result_dir, feature_list):
+
+    test_mani = test.copy()
+    fields_to_remove = ['visit_id', 'name', 'label']
+    df_feature_test = test_mani.drop(fields_to_remove, axis=1)
+    df_feature_test = df_feature_test.to_numpy()
+    #df_feature_test = df_feature_test[feature_list]
+
+    y_pred = clf.predict(df_feature_test)
+    
+    acc = accuracy_score(test_mani.label, y_pred)
+    prec = precision_score(test_mani.label, y_pred, pos_label=True)
+    rec = recall_score(test_mani.label, y_pred, pos_label=True)
+
+    fname = os.path.join(result_dir, "accuracy")
+    with open(fname, "a") as f:
+        f.write("\nAccuracy score: " + str(round(acc*100, 3)) + "%" + "\n")
+        f.write("Precision score: " + str(round(prec*100, 3)) + "%" + "\n")
+        f.write("Recall score: " + str(round(rec*100, 3)) + "%" +  "\n")
+
+    return list(test_mani.label), list(y_pred), list(test_mani.name), list(test_mani.visit_id)
+
 def classify(train, test, result_dir, tag, save_model, pred_probability, interpret):
 
     """
@@ -320,8 +342,8 @@ def pipeline(feature_file, label_file, result_dir, save_model, pred_probability,
       Nothing, creates a result directory with all the results.
     """
 
-    df_features = pd.read_csv(feature_file)
-    df_labels = pd.read_csv(label_file)
+    df_features = pd.read_csv(feature_file, index_col=0)
+    df_labels = pd.read_csv(label_file, index_col=0)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
 

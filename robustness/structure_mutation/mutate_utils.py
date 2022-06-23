@@ -9,10 +9,15 @@ from collections import Counter
 from datetime import datetime
 from random import randint
 from yaml import full_load
+import re
+import base64
+import hashlib 
 
+import graph as gs
 from features.feature_extraction import extract_graph_features
 import labelling as ls
-from training_save import *
+import classification as cs
+from obfuscation import *
 
 import logging
 from logging.config import fileConfig
@@ -34,11 +39,13 @@ def read_graph_file(graph_fname, visit_id):
 def check_third_party(row):
 
     try:
-        base_domain = row['domain']
-        top_level_domain = row['top_level_domain']
-        if base_domain and top_level_domain:
-            if base_domain != top_level_domain:
-                return True
+        nodetype = row['type']
+        if (nodetype == 'Request') or (nodetype == 'Script') or (nodetype == 'Document'):
+            base_domain = row['domain']
+            top_level_domain = row['top_level_domain']
+            if base_domain and top_level_domain:
+                if base_domain != top_level_domain:
+                    return True
     except Exception as e:
         return False
     return False
@@ -57,7 +64,7 @@ def find_third_parties_domain(df, pred_dict):
 
     df_third_party = find_all_third_parties(df)
     df_third_party_ads = pd.DataFrame()
-
+    
     if len(df_third_party) > 0:
         df_third_party['choose'] = df_third_party.apply(get_ads, args=(pred_dict,), axis=1)
         df_third_party_ads = df_third_party[df_third_party['choose'] == True]
@@ -110,12 +117,15 @@ def extract_and_classify(df_graph_vid, G, result_dir, folder_tag, visit_id,
     
     df_features = extract_graph_features(df_graph_vid, G, visit_id, ldb, feature_config)
     logger.info("Extracted features")
-    df_labelled = label_data(df_graph_vid, filterlists, filterlist_rules)
+    df_labels = ls.label_data(df_graph_vid, filterlists, filterlist_rules)
     logger.info("Labelled data")
     
+    df_labelled = df_features.merge(df_labels[['visit_id', 'name', 'label']], on=['visit_id', 'name'])
+    df_labelled = df_labelled[df_labelled['label'] != "Error"]
     df_labelled = df_labelled[~df_labelled['name'].str.contains('_fake')]
-    result =  classify_clf(clf, df_labelled, feature_list, test_result_dir)
-    report = describe_classif_reports([result], test_result_dir)
+    feature_list = feature_config['feature_columns'][2:]
+    result =  cs.classify_with_model(clf, df_labelled, test_result_dir, feature_list)
+    report = cs.describe_classif_reports([result], test_result_dir)
     #print_stats(report, test_result_dir)
 
     return len(df_labelled)
@@ -398,41 +408,6 @@ def is_third_party(domain, tlu):
     except:
         return "unknown"
 
-def get_cpt(attr):
-
-    if type(attr) is str:
-        if "content_policy_type" in attr:
-            attr = json.loads(attr)
-            content_policy_type = json.loads(attr[0])["content_policy_type"]
-        else:
-            content_policy_type = None
-    else:
-        attr = attr[0]
-        if "content_policy_type" in attr:
-            attr = json.loads(attr)
-            content_policy_type = attr["content_policy_type"]
-        else:
-            content_policy_type = None
-    return content_policy_type
-
-def get_top_level_url(attr):
-
-    if type(attr) is str:
-        if "top_level_url" in attr:
-            attr = json.loads(attr)
-            top_level_url = json.loads(attr[0])["top_level_url"]
-        else:
-            top_level_url = None
-    else:
-        attr = attr[0]
-        if "top_level_url" in attr:
-            attr = json.loads(attr)
-            top_level_url = attr["top_level_url"]
-        else:
-            top_level_url = None
-    
-    return top_level_url
-
 def find_domain(name):
     try:
         return du.get_ps_plus_1(name)
@@ -441,7 +416,7 @@ def find_domain(name):
 
 def get_ads(df, pred_dict):
 
-    key = str(df['visit_id']) + "_" + df['name']
+    key = str(int(df['visit_id'])) + "_" + df['name']
     if key in pred_dict:
         pred = pred_dict[key]
         if pred == "True":

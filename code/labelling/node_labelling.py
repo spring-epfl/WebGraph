@@ -181,9 +181,6 @@ def match_url(domain_top_level, current_domain, current_url, resource_type, rule
         return rules.should_block(current_url, options)
 
     except Exception as e:
-        print('Exception encountered', e)
-        print('top url', domain_top_level)
-        print('current url', current_domain)
         return False
 
 def label_node_data(row, filterlists, filterlist_rules):
