@@ -1,5 +1,5 @@
-FROM webgraph:latest
+FROM springepfl/webgraph:latest
 
-COPY datadir /datadir
+COPY datadir /WebGraph/datadir
 
 ENTRYPOINT ["/bin/bash"]
