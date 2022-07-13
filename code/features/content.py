@@ -1,7 +1,8 @@
-from six.moves.urllib.parse import urlparse, parse_qs
-from sklearn import preprocessing
 import re
 import json
+
+from six.moves.urllib.parse import urlparse, parse_qs
+from sklearn import preprocessing
 
 from logger import LOGGER
 
@@ -130,7 +131,10 @@ def get_node_features(node_name, node_dict, le):
     domain = node_dict['domain']
 
     if "content_policy_type" in attr:
-      content_policy_type = json.loads(attr)["content_policy_type"]
+      if isinstance(attr, dict):
+        content_policy_type = attr["content_policy_type"]
+      else:
+        content_policy_type = json.loads(attr).get("content_policy_type")
     if top_level_domain and domain:
       if domain == top_level_domain:
         is_subdomain = 1
