@@ -124,6 +124,9 @@ def build_html_components(df_javascript):
             df_element_nodes = created_elements[['visit_id', 'name', 'top_level_url', 'type', 'attr']]
             df_create_edges = created_elements[['visit_id', 'script_url', 'name', 'top_level_url', 'action', 'time_stamp']]
             df_create_edges = df_create_edges.rename(columns={'script_url' : 'src', 'name' : 'dst'})
+        else:
+            df_create_edges = pd.DataFrame()
+            df_element_nodes = pd.DataFrame()
            
         src_elements = df_javascript[(df_javascript['symbol'].str.contains("Element.src")) & (df_javascript['operation'].str.contains('set'))].copy()
         
