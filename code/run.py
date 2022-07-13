@@ -156,13 +156,6 @@ def build_graph(database: Database, visit_id: str, is_webgraph: bool) -> pd.Data
     df_all_edges['top_level_domain'] = df_all_edges['top_level_url'].apply(find_tld)
     df_all_edges['graph_attr'] = "Edge"
 
-    #Remove all non-FP cookies, comment for unblocked
-    df_all_nodes['party'] = df_all_nodes.apply(get_party, axis=1)
-    third_parties = df_all_nodes[df_all_nodes['party'] == 'third']['name'].unique()
-    df_all_nodes = df_all_nodes[~df_all_nodes['name'].isin(third_parties)]
-    df_all_edges = df_all_edges[~df_all_edges['dst'].isin(third_parties)]
-    df_all_edges = df_all_edges[~df_all_edges['src'].isin(third_parties)]
-
     df_all_graph = pd.concat([df_all_nodes, df_all_edges])
     df_all_graph = df_all_graph.astype(
         {
