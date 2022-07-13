@@ -15,6 +15,50 @@ from treeinterpreter import treeinterpreter as ti
 
 #from logger import LOGGER
 
+def build_cpt_dict():
+
+    openwpm_resource_types = [
+        "beacon",
+        "csp_report",
+        "font",
+        "image",
+        "imageset",
+        "main_frame",
+        "media",
+        "object",
+        "object_subrequest",
+        "ping",
+        "script",
+        "stylesheet",
+        "sub_frame",
+        "web_manifest",
+        "websocket",
+        "xml_dtd",
+        "xmlhttprequest",
+        "xslt",
+        "other",
+    ]
+
+    cpt_dict = dict((v,k) for k,v in enumerate(openwpm_resource_types))
+    return cpt_dict 
+
+def convert_cpt_old(cpt, cpt_dict):
+
+    """
+    Helper function to convert content_policy_type to old OpenWPM format.
+
+    Args:
+        cpt: Content policy type
+        cpt_dict: Mapping of string to integer for cpt
+    Returns:
+        Corrected cpt format.
+    """
+
+    if cpt in cpt_dict:
+        return cpt_dict[cpt]
+    else:
+        return cpt
+
 
 def get_perc(num, den):
 
@@ -345,6 +389,13 @@ def pipeline(feature_file, label_file, result_dir, save_model, pred_probability,
 
     df_features = pd.read_csv(feature_file)
     df_features.dropna(axis=1, how="all", inplace=True)
+    df_features.dropna(how="any", inplace=True)
+    
+    if 'content_policy_type' in df_features.columns:
+        cpt_dict = build_cpt_dict()
+        df_features['content_policy_type'] = \
+            df_features['content_policy_type'].apply(convert_cpt_old, cpt_dict=cpt_dict)
+
     df_labels = pd.read_csv(label_file)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
