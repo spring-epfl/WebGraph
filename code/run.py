@@ -2,7 +2,7 @@ import argparse
 import sys
 import traceback
 from pathlib import Path
-from typing import List, Union
+from typing import Any, Dict, List, Union
 import time
 
 import pandas as pd
@@ -120,9 +120,10 @@ def find_setters(df_all_storage_nodes: pd.DataFrame, df_http_cookie_nodes: pd.Da
     return df_setter_nodes
 
 
-def build_graph(database: Database, visit_id: str) -> pd.DataFrame:
+def build_graph(database: Database, visit_id: str, is_webgraph: bool) -> pd.DataFrame:
     """Read SQL data from crawler for a given visit_ID.
     :param visit_id: visit ID of a crawl URL.
+    :param is_webgraph: compute additional info for WebGraph mode
     :return: Parsed information (nodes and edges) in pandas df.
     """
     # Read tables from DB and store as DataFrames
@@ -130,10 +131,16 @@ def build_graph(database: Database, visit_id: str) -> pd.DataFrame:
     
     # extract nodes and edges from all categories of interest as described in the paper
     df_js_nodes, df_js_edges = gs.build_html_components(javascript)
-    df_request_nodes, df_request_edges = gs.build_request_components(df_requests, df_responses, df_redirects, call_stacks)
-    df_all_storage_nodes, df_all_storage_edges = gs.build_storage_components(javascript)
-    df_http_cookie_nodes, df_http_cookie_edges = gs.build_http_cookie_components(df_request_edges, df_request_nodes)
-    df_storage_node_setter = find_setters(df_all_storage_nodes, df_http_cookie_nodes, df_all_storage_edges, df_http_cookie_edges)
+    df_request_nodes, df_request_edges = gs.build_request_components(df_requests, df_responses, df_redirects, call_stacks, is_webgraph)
+    
+    if is_webgraph:
+        df_all_storage_nodes, df_all_storage_edges = gs.build_storage_components(javascript)
+        df_http_cookie_nodes, df_http_cookie_edges = gs.build_http_cookie_components(df_request_edges, df_request_nodes)
+        df_storage_node_setter = find_setters(df_all_storage_nodes, df_http_cookie_nodes, df_all_storage_edges, df_http_cookie_edges)
+    else:
+        df_all_storage_edges = pd.DataFrame()
+        df_http_cookie_edges = pd.DataFrame()
+        df_storage_node_setter = find_setters(pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
 
     # Concatenate to get all nodes and edges
     df_request_nodes['domain'] = None
@@ -221,7 +228,17 @@ def apply_tasks(df: pd.DataFrame, visit_id: int, config_info: dict , ldb_file: P
         LOGGER.warning("Errored in pipeline", exc_info=True)
 
 
-def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir: Path, output_dir: Path, overwrite=True):
+def validate_config(config_info: Dict[str, Any], mode: str) -> None:
+    """ Validate the configuration.
+    :param config_info: dictionary containing features to use.
+    :param mode: computation mode
+    """
+    if mode == "adgraph":
+        if "dataflow" in config_info["features_to_extract"]:
+            raise Exception("Error: 'dataflow' must not be used in 'adgraph' mode, please remove it from 'features_to_extract'.")
+
+
+def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir: Path, output_dir: Path, mode: str, overwrite=True):
     
     """ Graph processing and labeling pipeline
     :param db_file: the graph data (nodes and edges) in pandas df.
@@ -229,6 +246,7 @@ def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir:
     :param config_info: dictionary containing features to use.
     :param ldb_file: path to ldb file.
     :param output_dir: path to the output directory.
+    :param mode: computation mode
     :param overwrite: set True to overwrite the content of the output directory.
     """
 
@@ -238,6 +256,8 @@ def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir:
     fs.download_lists(filterlist_dir, overwrite)
     filterlists, filterlist_rules = fs.create_filterlist_rules(filterlist_dir)
     config_info = load_config_info(features_file)
+
+    validate_config(config_info, mode)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -262,7 +282,7 @@ def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir:
                 start = time.time()
 
                 # build graph nodes and edges dataframe
-                pdf = build_graph(database, visit_id)
+                pdf = build_graph(database, visit_id, mode=="webgraph")
                 tqdm.write(str(pdf.shape))
 
                 # run the feature extraction tasks on the dataframe and node labeling
@@ -314,9 +334,17 @@ def main(program: str, args: List[str]):
         default=Path("out")
     )
 
+    parser.add_argument(
+        "--mode",
+        choices=["webgraph", "adgraph"],
+        help="Computation mode",
+        default="webgraph"
+    )
+
+
     ns= parser.parse_args(args)
 
-    pipeline(ns.input_db, ns.ldb, ns.features, ns.filters, ns.out, overwrite=False)
+    pipeline(ns.input_db, ns.ldb, ns.features, ns.filters, ns.out, ns.mode, overwrite=False)
 
 
 if __name__ == "__main__":
