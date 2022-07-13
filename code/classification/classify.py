@@ -344,6 +344,7 @@ def pipeline(feature_file, label_file, result_dir, save_model, pred_probability,
     """
 
     df_features = pd.read_csv(feature_file)
+    df_features.dropna(axis=1, how="all", inplace=True)
     df_labels = pd.read_csv(label_file)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
