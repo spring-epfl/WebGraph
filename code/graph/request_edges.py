@@ -121,6 +121,7 @@ def get_redirect_edges(df_requests, df_redirects, df_responses):
         df_requests: DataFrame representation of requests table in OpenWPM.
         df_redirects: DataFrame representation of redirects table in OpenWPM.
         df_responses: DataFrame representation of responses table in OpenWPM.
+        is_webgraph: compute additional info for WebGraph mode
     Returns:
         df_redirect_edges: DataFrame representation of redirect edges.
         completed_ids: Request IDs of redirect edges.
@@ -274,7 +275,7 @@ def get_normal_edges(df_requests, df_responses, completed_ids):
     return df_normal_edges
 
 
-def build_request_components(df_requests, df_responses, df_redirects, call_stacks):
+def build_request_components(df_requests, df_responses, df_redirects, call_stacks, is_webgraph: bool):
 
     """
     Function to extract HTTP nodes/edges.
@@ -284,6 +285,7 @@ def build_request_components(df_requests, df_responses, df_redirects, call_stack
         df_responses: DataFrame representation of responses table in OpenWPM.
         df_redirects: DataFrame representation of redirects table in OpenWPM.
         call_stacks: DataFrame representation of call_stacks table in OpenWPM.
+        is_webgraph: compute additional info for WebGraph mode
     Returns:
         df_request_nodes: DataFrame representation of request nodes.
         df_request_edges: DataFrame representation of request edges.
@@ -311,7 +313,7 @@ def build_request_components(df_requests, df_responses, df_redirects, call_stack
         df_request_nodes = df_request_nodes.rename(columns={'url': 'name'})
 
         # Redirect edges. To be inserted
-        if len(df_redirects) > 0:
+        if len(df_redirects) > 0 and is_webgraph:
             df_redirects['old_request_id'] = df_redirects['old_request_id'].apply(
                 lambda x: int(x))
             df_redirects['key'] = df_redirects[['visit_id', 'old_request_id']].apply(
