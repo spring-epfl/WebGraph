@@ -44,7 +44,7 @@ def extract_features(pdf: pd.DataFrame, networkx_graph, visit_id: str, config_in
 
 @return_none_if_fail()
 def find_setter_domain(setter: str) -> str:
-    """Finds the domain from a setter 
+    """Finds the domain from a setter
     :param setter: string setter value
     :return: string domain value
     """
@@ -53,7 +53,7 @@ def find_setter_domain(setter: str) -> str:
 
 @return_none_if_fail(is_debug=True)
 def find_domain(row: pd.Series) -> Union[str, None]:
-    """Finds the domain of a node 
+    """Finds the domain of a node
     :param row: a row from the graph df representing a node.
     :return: string domain value or none if N/A
     """
@@ -97,7 +97,7 @@ def find_setters(df_all_storage_nodes: pd.DataFrame, df_http_cookie_nodes: pd.Da
     :param row: a row from the graph df representing a node.
     :return: string domain value or none if N/A
     """
-    
+
     df_setter_nodes = pd.DataFrame(columns=['visit_id', 'name', 'type', 'attr', 'top_level_url', 'domain', 'setter', 'setting_time_stamp'])
 
     try:
@@ -105,12 +105,12 @@ def find_setters(df_all_storage_nodes: pd.DataFrame, df_http_cookie_nodes: pd.Da
         df_storage_edges = pd.concat([df_all_storage_edges, df_http_cookie_edges])
         if len(df_storage_edges) > 0:
             # get all set events for http and js cookies
-            df_storage_sets = df_storage_edges[(df_storage_edges['action'] == 'set') 
+            df_storage_sets = df_storage_edges[(df_storage_edges['action'] == 'set')
                                 | (df_storage_edges['action'] == 'set_js')]
 
             # find the initial setter nodes for each cookie
             df_setters = gs.get_original_cookie_setters(df_storage_sets)
-            
+
             df_storage_nodes = pd.concat([df_all_storage_nodes, df_http_cookie_nodes])
             df_setter_nodes = df_storage_nodes.merge(df_setters, on=['visit_id', 'name'], how='outer')
 
@@ -128,11 +128,11 @@ def build_graph(database: Database, visit_id: str, is_webgraph: bool) -> pd.Data
     """
     # Read tables from DB and store as DataFrames
     df_requests, df_responses, df_redirects, call_stacks, javascript = database.website_from_visit_id(visit_id)
-    
+
     # extract nodes and edges from all categories of interest as described in the paper
     df_js_nodes, df_js_edges = gs.build_html_components(javascript)
     df_request_nodes, df_request_edges = gs.build_request_components(df_requests, df_responses, df_redirects, call_stacks, is_webgraph)
-    
+
     if is_webgraph:
         df_all_storage_nodes, df_all_storage_edges = gs.build_storage_components(javascript)
         df_http_cookie_nodes, df_http_cookie_edges = gs.build_http_cookie_components(df_request_edges, df_request_nodes)
@@ -202,11 +202,11 @@ def apply_tasks(df: pd.DataFrame, visit_id: int, config_info: dict , ldb_file: P
 
         # building networkx_graph
         networkx_graph = gs.build_networkx_graph(df)
-        
+
         # extracting features from graph data and graph structure
         df_features = extract_features(df, networkx_graph, visit_id, config_info, ldb_file)
         features_path = output_dir / "features.csv"
-        
+
         # export the features to csv file
         if overwrite or not features_path.is_file():
             df_features.reindex(columns=feature_columns).to_csv(str(features_path))
@@ -239,7 +239,7 @@ def validate_config(config_info: Dict[str, Any], mode: str) -> None:
 
 
 def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir: Path, output_dir: Path, mode: str, overwrite=True):
-    
+
     """ Graph processing and labeling pipeline
     :param db_file: the graph data (nodes and edges) in pandas df.
     :param visit_id: visit ID of a crawl URL.
@@ -251,7 +251,7 @@ def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir:
     """
 
     number_failures = 0
-    
+
     # setup and load files
     fs.download_lists(filterlist_dir, overwrite)
     filterlists, filterlist_rules = fs.create_filterlist_rules(filterlist_dir)
@@ -270,9 +270,8 @@ def pipeline(db_file: Path, ldb_file: Path, features_file: Path, filterlist_dir:
             tqdm.write(f"Problem reading the sites_visits: {e}")
             exit()
 
-
         for _, row in tqdm(sites_visits.iterrows(), total=len(sites_visits), position=0, leave=True, ascii=True):
-            
+
             # For each visit, grab the visit_id
             visit_id = row['visit_id']
             tqdm.write("")
@@ -344,7 +343,7 @@ def main(program: str, args: List[str]):
 
     ns= parser.parse_args(args)
 
-    pipeline(ns.input_db, ns.ldb, ns.features, ns.filters, ns.out, ns.mode, overwrite=False)
+    pipeline(ns.input_db, ns.ldb, ns.features, ns.filters, ns.out, ns.mode, overwrite=True)
 
 
 if __name__ == "__main__":
