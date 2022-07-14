@@ -13,10 +13,6 @@ features_to_extract:
       - structure
       - dataflow
       #- additional
-
-classifier_feature_set:
-      #- adgraph
-      - webgraph
      
 graph_columns:
       - visit_id
@@ -46,6 +42,18 @@ graph_columns:
 feature_columns:
       - visit_id
       - name
+      - content_policy_type
+      - url_length
+      - is_subdomain
+      - is_valid_qs
+      - is_third_party
+      - base_domain_in_query 
+      - semicolon_in_query 
+      - screen_size_present 
+      - ad_size_present
+      - ad_size_in_qs_present
+      - keyword_raw_present 
+      - keyword_char_present
       - num_nodes
       - num_edges
       - nodes_div_by_edges
