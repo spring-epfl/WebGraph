@@ -52,7 +52,7 @@ In this task, WebGraph constructs the dataset for classification by:
 To run this task, run the following script:
 
 ```
-python <project-directory>/code/run.py --input-db <location-to-datadir>/datadir/crawl-db.sqlite --ldb <location-to-datadir>/datadir/content.ldb
+python <project-directory>/code/run.py --input-db <location-to-datadir>/datadir/crawl-db.sqlite --ldb <location-to-datadir>/datadir/content.ldb --mode webgraph
 ```
 
 > All additional arguments accepted by this command:
@@ -62,6 +62,7 @@ python <project-directory>/code/run.py --input-db <location-to-datadir>/datadir/
 > - `--features`: the path to the `.yaml` feature categories list. A default `features.yaml` is used if unspecified.
 > - `--filters`: the path to the directory to save the filter lists in. A default `filterlists` folder will be created if unspecified.
 > - `--out`: the path to the directory of the output `.csv` files.
+> - `--mode`: the system to run (webgraph or adgraph).
 
 
 #### 2. Classification
