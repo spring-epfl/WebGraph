@@ -336,7 +336,7 @@ def main(program: str, args: List[str]):
 
     ns= parser.parse_args(args)
 
-    pipeline(ns.input_db, ns.ldb, ns.features, ns.filters, ns.out, ns.mode, overwrite=True)
+    pipeline(ns.input_db, ns.ldb, ns.features, ns.filters, ns.out, ns.mode, overwrite=False)
 
 
 if __name__ == "__main__":
