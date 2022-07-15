@@ -114,6 +114,101 @@ feature_columns:
       - indirect_all_average_degree_connectivity
       - indirect_all_eccentricity
 
+feature_columns_adgraph:
+      - visit_id
+      - name
+      - content_policy_type
+      - url_length
+      - is_subdomain
+      - is_valid_qs
+      - is_third_party
+      - base_domain_in_query 
+      - semicolon_in_query 
+      - screen_size_present 
+      - ad_size_present
+      - ad_size_in_qs_present
+      - keyword_raw_present 
+      - keyword_char_present
+      - num_nodes
+      - num_edges
+      - nodes_div_by_edges
+      - edges_div_by_nodes
+      - in_degree
+      - out_degree
+      - in_out_degree
+      - average_degree_connectivity
+      - is_parent_script
+      - is_ancestor_script
+      - ascendant_has_ad_keyword
+      - is_eval_or_function
+      - descendant_of_eval_or_function
+      - ascendant_script_has_eval_or_function
+      - ascendant_script_has_fp_keyword
+      - ascendant_script_length
+
+feature_columns_webgraph:
+      - visit_id
+      - name
+      - num_nodes
+      - num_edges
+      - nodes_div_by_edges
+      - edges_div_by_nodes
+      - in_degree
+      - out_degree
+      - in_out_degree
+      - ancestors
+      - descendants
+      - closeness_centrality
+      - average_degree_connectivity
+      - eccentricity 
+      - is_parent_script
+      - is_ancestor_script
+      - ascendant_has_ad_keyword
+      - is_eval_or_function
+      - descendant_of_eval_or_function
+      - ascendant_script_has_eval_or_function
+      - ascendant_script_has_fp_keyword
+      - ascendant_script_length
+      - num_get_storage
+      - num_set_storage
+      - num_get_cookie
+      - num_set_cookie
+      - num_script_predecessors
+      - num_script_successors
+      - num_requests_sent
+      - num_requests_received
+      - num_redirects_sent
+      - num_redirects_rec
+      - max_depth_redirect
+      - indirect_in_degree
+      - indirect_out_degree
+      - indirect_ancestors
+      - indirect_descendants
+      - indirect_closeness_centrality
+      - indirect_average_degree_connectivity
+      - indirect_eccentricity
+      - indirect_mean_in_weights
+      - indirect_min_in_weights
+      - indirect_max_in_weights
+      - indirect_mean_out_weights
+      - indirect_min_out_weights
+      - indirect_max_out_weights
+      - num_set_get_src
+      - num_set_mod_src
+      - num_set_url_src
+      - num_get_url_src
+      - num_set_get_dst
+      - num_set_mod_dst
+      - num_set_url_dst
+      - num_get_url_dst
+      - indirect_all_in_degree
+      - indirect_all_out_degree
+      - indirect_all_ancestors
+      - indirect_all_descendants
+      - indirect_all_closeness_centrality
+      - indirect_all_average_degree_connectivity
+      - indirect_all_eccentricity
+
 label_columns:
       - visit_id
       - top_level_url
