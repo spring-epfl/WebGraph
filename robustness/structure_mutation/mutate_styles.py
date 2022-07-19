@@ -149,7 +149,7 @@ def remove_storage_edge(df_chosen_edge, df_graph_vid, G, third_party_node_names,
         logger.error("Error removing storage edge: " + str(e))
 
     folder_tag = str(ct) + "_" + str(random.randint(0,10000)) + "_remove_storage"
-    num_test = extract_and_classify(df_graph_edges, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
+    num_test = extract_and_classify(df_new_edges, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
     new_dirname = os.path.join(result_dir, folder_tag)
     df_original = read_prediction_df(os.path.join(result_dir, "0_content_mutated", "tp_0"))
     df_new = read_prediction_df(os.path.join(new_dirname, "tp_0"))
@@ -233,7 +233,7 @@ def obfuscate_url(dest, to_replace, df_graph_vid, G, third_party_node_names, ori
 
     mapping_dict = {dest : new_url}
     df_graph_new = df_graph_vid.copy().replace({'name' : mapping_dict, 'src' : mapping_dict, 'dst' : mapping_dict})
-    G_new = build_graph(df_graph_new)
+    G_new = gs.build_networkx_graph(df_graph_new)
 
     folder_tag = str(ct) + "_" + str(random.randint(0,10000)) + "_obfuscate_url"
     num_test = extract_and_classify(df_graph_new, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
@@ -368,7 +368,7 @@ def redistribute_redirect_edge(df_chosen_edge, df_graph_vid, G, third_party_node
     df_new_edges = pd.concat([df_graph_vid, df_chosen_edge], ignore_index=True).drop_duplicates()
 
     folder_tag = str(ct) + "_" + str(random.randint(0,10000)) + "_remove_redirect"
-    num_test = extract_and_classify(df_graph_edges, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
+    num_test = extract_and_classify(df_new_edges, G_new, result_dir, folder_tag, visit_id, ldb, feature_config, clf, filterlists, filterlist_rules)
  
     new_dirname = os.path.join(result_dir, folder_tag)
     df_original = read_prediction_df(os.path.join(result_dir, "0_content_mutated", "tp_0"))
