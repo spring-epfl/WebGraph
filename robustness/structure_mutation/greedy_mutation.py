@@ -203,8 +203,8 @@ def pipeline(config):
         vid_list = json.loads(f.read())['vids']
         vid_list = sorted(vid_list)
 
-    fs.download_lists(Path(FILTERLIST_DIR), overwrite=False)
-    filterlists, filterlist_rules = fs.create_filterlist_rules(Path(FILTERLIST_DIR))
+    lfs.download_lists(Path(FILTERLIST_DIR), overwrite=False)
+    filterlists, filterlist_rules = lfs.create_filterlist_rules(Path(FILTERLIST_DIR))
 
     for visit_id in vid_list:
 
