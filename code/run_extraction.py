@@ -249,6 +249,7 @@ def pipeline(graph_file: Path, ldb_file: Path, features_file: Path, filterlist_d
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
+        start = time.time()
         pdf = pd.read_csv(graph_file)
         sites_visits = pdf['visit_id'].unique()
         # run the feature extraction tasks on the dataframe and node labeling
