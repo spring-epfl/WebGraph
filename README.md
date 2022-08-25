@@ -31,13 +31,19 @@ pip install -r requirements.txt
 
 #### Preparing Crawl Data
 
-To generate the crawl data needed for the pipeline, you need to run a crawl using the installed OpenWPM tool. 
+To generate the crawl data needed for the pipeline, you need to run a crawl using the installed OpenWPM tool. To run a crawl, first update the script `demo.py` to read in the list of sites that you want to visit. Then, run `demo.py`. 
 
 After you run the demo, a `datadir` folder will be created in your `demo` directory. Inside the folder, you will find two database files to be used in our pipeline: `crawl-db.sqlite` and `content.ldb`
 
-### Pipeline
+### Pipelines
 
-with WebGraph, we mainly present two tasks that you can run:
+The codebase consists of two pipelines: WebGraph and Robustness. We describe each of them below.
+
+#### WebGraph Pipeline
+
+This pipeline runs the WebGraph system, which is a graph-based Ad and Tracking Services (ATS) detection system. WebGraph takes in crawl data, builds graph representations of sites, extracts features and labels from these representations, and trains a machine learning model. 
+
+With the WebGraph code, we present two tasks that you can run:
 
 1. Graph Preprocessing and Feature building
 2. Classification (training and testing)
@@ -47,7 +53,7 @@ with WebGraph, we mainly present two tasks that you can run:
 In this task, WebGraph constructs the dataset for classification by:
 
 - taking your *sqlite* and *leveldb* database files to construct a graph representation of each crawl as explained in the [paper](https://www.usenix.org/system/files/sec22summer_siby.pdf) and export it in a tabular format to a `graph.csv` file and `features.csv` file
-- applying the rules from public *filterlists* to label the nodes in each graph and export it in a tabular format to a `labeled.csv` file
+- applying the rules from public *filterlists* to label the nodes in each graph and export it in a tabular format to a `labelled.csv` file
 
 To run this task, run the following script:
 
@@ -64,6 +70,7 @@ python <project-directory>/code/run.py --input-db <location-to-datadir>/datadir/
 > - `--out`: the path to the directory of the output `.csv` files.
 > - `--mode`: the system to run (webgraph or adgraph).
 
+Note: With the `--mode` argument, you can also run AdGraph (we evaluate AdGraph in Section 3 of the paper).
 
 #### 2. Classification
 
@@ -83,7 +90,13 @@ python <project-directory>/code/classification/classify.py --features features.c
 
 <hr/>
 
+#### Robustness Pipeline
+
+This pipeline runs the robustness experiments performed in the paper. There are two types of robustness experiments: content and structure mutations. All the code and READMEs associated with these experiments are in the `robustness` folder.
+
 ### Data Schema
+
+The output of the WebGraph pipeline is three files: `graph.csv`, `features.csv`, `labelled.csv`.
 
 #### Graph
 
@@ -119,11 +132,21 @@ The features in `features.csv` used are described in [features.yaml](https://git
 
 #### Labels
 
-Nodes labeled by either True or False if they are blocked by filter lists or not.
+Nodes labeled by either True or False if they are blocked by filter lists or not. These are the columns present in the `labelled.csv` file.
+
+| Column               | Description                                                  |
+| -------------------- | ------------------------------------------------------------ |
+| *visit_id*           | The visit id of the crawl                                    |
+| *top_level_url*      | The top level URL (page being visited)                       |
+| *name*               | The name of the node                                         |
+| *label*              | The label of the node                                        |
+
 
 <hr/>
 
 ### Code Organization
+
+The WebGraph pipeline is in the `code` folder. The Robustness pipeline is in the `robustness` folder. 
 
 ### Paper
 
@@ -153,5 +176,9 @@ If you use the code/data in your research, please cite our work as follows:
 ### Contact
 
 In case of questions, please get in touch with [Sandra Siby](https://sandrasiby.github.io/). 
+
+### Acknowledgements
+
+Thanks to Laurent Girod and Saiid El Hajj Chehade for helping test and improve the code.
 
 

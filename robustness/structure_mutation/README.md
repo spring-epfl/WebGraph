@@ -25,13 +25,13 @@ The `config.yaml` file contains the following parameters that have to be set:
 >
 > feature_config: Path to the feature configuration file. Sample file [here](https://github.com/spring-epfl/WebGraph/blob/main/code/features.yaml). We need this for feature extraction.
 >
-> vid_file: Path to a JSON file containing a list of visit IDs for which we want to perform the mutation.
+> vid_file: Path to a JSON file containing a list of visit IDs for which we want to perform the mutation. Example in `sample/chosen_ids.json`
 >
 > filterlists: Path to an output folder to which filter lists will be downloaded for labelling.
 >
 > parent_limit: Number of nodes to act as start points to perform mutation. Note: Increasing the parent_limit will increase experiment run time.
 >
-> model: Path to a trained model file generated the WebGraph classification process (these are files labelled `model_0.joblib`, `model_1.joblib`, etc.). 
+> model: Path to a trained model file generated the WebGraph classification process (these are files labelled `model_0.joblib`, `model_1.joblib`, etc.). Example in `sample/model_1.joblib`.
 >
 > result_dir: Path to output folder for the result.
 >
