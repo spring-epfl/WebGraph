@@ -1,5 +1,7 @@
 # WebGraph
 
+Update (13/06/2024): We are currently resolving some issues related to OpenWPM compatibility with Firefox for WebGraph crawls. We will release fixes soon. 
+
 Artifact release for the paper "WebGraph: Capturing Advertising and Tracking Information Flows for Robust Blocking", published at USENIX Security 2022.
 <hr/>
 
