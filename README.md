@@ -1,6 +1,6 @@
 # WebGraph
 
-Update (13/06/2024): We are currently resolving some issues related to OpenWPM compatibility with Firefox for WebGraph crawls. We will release fixes soon. 
+Update (30/07/2024): We are currently resolving some issues related to OpenWPM compatibility with Firefox for WebGraph crawls. We will release fixes soon. In the meantime, a trained model of WebGraph on 20k sites can be found here: https://drive.google.com/drive/folders/1IivW179R5YHYCqOMFH77LxyZ0aJixqFV?usp=drive_link . This model was trained on April 6-8 2023.  
 
 Artifact release for the paper "WebGraph: Capturing Advertising and Tracking Information Flows for Robust Blocking", published at USENIX Security 2022.
 <hr/>
